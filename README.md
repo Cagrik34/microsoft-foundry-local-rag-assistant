@@ -37,14 +37,14 @@ Tamamen çevrimdışı, sıfır veri sızıntısı riskiyle çalışan kurumsal 
 
 ```text
                                ┌────────────────────────────────────────┐
-                               │     Kullanıcı Arayüzü (UI Layer)      │
+                               │      Kullanıcı Arayüzü (UI Layer)      │
                                │  [Web (Streamlit)]  |  [Terminal CLI]  │
                                └───────────────────┬────────────────────┘
                                                    │ (Event Dispatch)
                                                    ▼
                                ┌────────────────────────────────────────┐
-                               │      RAG Orkestrasyon Motoru           │
-                               │           (src/core/engine.py)         │
+                               │        RAG Orkestrasyon Motoru         │
+                               │          (src/core/engine.py)          │
                                └─────────┬────────────────────┬─────────┘
                                          │                    │
                     (Vektör Arama)       │                    │ (Metin İstemcisi)
@@ -125,10 +125,10 @@ Başlangıçta interaktif mod seçim ekranı karşılayacaktır:
 
 ```text
 ╭─────────────────────────────────────────────────────────────╮
-│  ⚡ ZENITH AI — Yerel RAG Akıllı Asistanı                   │
-│  🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI           │
+│  ⚡ ZENITH AI — Yerel RAG Akıllı Asistanı                    │
+│  🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI            │
 ├─────────────────────────────────────────────────────────────┤
-│  🚀 Çalıştırma Modunu Seçin:                                │
+│  🚀 Çalıştırma Modunu Seçin:                              │
 │                                                             │
 │   [1] 💻 Terminal (CLI) Modu                                │
 │   [2] 🌐 Web Arayüzü (Streamlit — Tarayıcıda Açılır)        │
