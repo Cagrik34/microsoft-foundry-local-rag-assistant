@@ -1,0 +1,19 @@
+# Python / Sanal Ortam
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Yerel Veritabanı ve Loglar
+data/*.db
+*.log
+
+# IDE ve İşletim Sistemi
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
