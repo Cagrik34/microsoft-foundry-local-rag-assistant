@@ -190,6 +190,21 @@ microsoft-foundry-local-rag-assistant/
 
 ---
 
+## 🎓 Öğrenim Çıktıları ve Mühendislik Derinliği (Proof of Learning & Mastery)
+
+Bu proje süresince **Microsoft Foundry Local RAG Müfredatı** kapsamında kopyala-yapıştır kodların ötesine geçilerek bizzat deneyimlenen ve öğrenilen derin teknik kazanımlar:
+
+1. **Vektör Araması ve Kosinüs Benzerliği Matematiği:**  
+   Metinlerin 1024-boyutlu sayısal vektörlere (`qwen3-embedding-0.6b`) dönüştürülerek SQLite üzerinde kosinüs açısı benzerliği ile nasıl saniyeler içinde anlamsal aranacağını bizzat uygulayarak öğrendim.
+2. **C++ Native Driver & AsyncIO Kilitlenme Yönetimi:**  
+   Microsoft Foundry SDK C++ gRPC istemcisi ile Streamlit AsyncIO event loop'unun çakışması sonucu oluşan kilitlenmeleri `concurrent.futures.ThreadPoolExecutor` iş parçacığı izolasyonu ile çözmeyi tecrübe ettim.
+3. **Stateless (Durumsuz) İstemci Mimarisi & Bellek Yönetimi:**  
+   Oturumlar arası bağlam şişmesini ve bellek sızıntılarını (memory leak) engellemek için her sorguda dinamik `get_chat_client()` nesneleri üreterek sistem kararlılığını sağlamayı öğrendim.
+4. **WCAG 2.1 Erişilebilirlik Standartları:**  
+   Görme engelli bireyler için Web Speech API entegrasyonu yaparak, yapay zekanın sadece bir algoritma değil, her insana eşit hitap eden engelsiz bir sosyal çözüm olabileceğini deneyimledim.
+
+---
+
 ## 📄 Lisans
 
 Bu proje **MIT Lisansı** altında lisanslanmıştır.
