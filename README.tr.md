@@ -106,6 +106,26 @@
 
 ---
 
+## 🛠️ Mühendislik Atılımları ve Gecikme Optimizasyonları
+
+### 1. Streamlit AsyncIO & Native C++ gRPC Kilitlenme Çözümü
+* **Sorun:** Microsoft Foundry SDK'nın native gRPC sürücüsü, ana iş parçacığındaki Streamlit `asyncio` döngüsüyle çakışarak 180s donmalara ve `Operation was cancelled` zaman aşımlarına yol açıyordu.
+* **Çözüm:** Tüm embedding üretimi ve sohbet tamamlamaları kalıcı bir `ThreadPoolExecutor(max_workers=1)` izole iş parçacığına yönlendirildi.
+
+### 2. Çoklu Dosya Özetleme Gecikmesinin Düşürülmesi ($O(N) \to O(1)$)
+* **Sorun:** $N$ adet indeksli dosyanın özetlenmesi önceden $N$ adet sıralı senkron LLM çağrısı tetikliyordu ($N \times 25\text{s} = 75\text{s}+$).
+* **Çözüm:** Birleşik bağlamsal istem yapısına dönüştürülerek tüm çoklu dosya yönetici özeti tek bir ~8s çıkarım çağrısında üretildi.
+
+### 3. Hayalet Chunk'lar ve L2 Ön-Normalizasyonu
+* **Sorun:** Kısaltılmış dosyaların yeniden indekslenmesi SQLite içinde eski öksüz parçalar bırakıyordu (`INSERT OR REPLACE` yalnızca eşleşen indeksleri güncelliyordu).
+* **Çözüm:** Yazma öncesi temizlik (`DELETE FROM documents WHERE source_file = ?`) ve birim L2 vektör depolaması uygulandı.
+
+### 4. Windows UTF-8 Terminal Çökme Koruması
+* **Sorun:** Windows komut satırı kod sayfaları (`cp1254`/`cp1252`) durum emojilerini yazdırırken `UnicodeEncodeError` üretiyordu.
+* **Çözüm:** Hem `app.py` hem de `src/ui/cli.py` içinde çalışma anı `sys.stdout` ve `sys.stderr` UTF-8 akış sarmalayıcıları entegre edildi.
+
+---
+
 ## 🚀 Kurulum ve Başlatma
 
 ### Gereksinimler
