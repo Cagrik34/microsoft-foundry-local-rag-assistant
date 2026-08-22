@@ -133,6 +133,10 @@ def read_document(file_path: str) -> DocumentInfo:
                 break
             except (UnicodeDecodeError, UnicodeError):
                 continue
+            except Exception as e:
+                print(f"⚠️  Metin dosyası okuma hatası ({file_path}): {e}")
+                content = ""
+                break
     elif ext == ".pdf":
         content = _extract_pdf(file_path)
     elif ext == ".docx":
@@ -142,7 +146,7 @@ def read_document(file_path: str) -> DocumentInfo:
     elif ext == ".pptx":
         content = _extract_pptx(file_path)
     else:
-        raise ValueError(f"Desteklenmeyen uzantı: {ext}")
+        content = ""
 
     return DocumentInfo(file_path=file_path, file_name=file_name, content=content)
 

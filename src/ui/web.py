@@ -767,7 +767,6 @@ def main() -> None:
             for chunk in stream_gen:
                 full_answer += chunk
                 answer_placeholder.markdown(full_answer + " ▌")
-                time.sleep(0.01)
 
             answer_placeholder.markdown(full_answer)
             _render_tts_button(full_answer, "live")
