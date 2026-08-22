@@ -5,10 +5,9 @@ Metin öbekleri, arama sonuçları ve Foundry Local SDK model sürücüsü.
 """
 
 import sys
-import time
 import concurrent.futures
 from dataclasses import dataclass, field
-from typing import List, Iterator
+from typing import List
 from src.config import EMBEDDING_MODEL, CHAT_MODEL, APP_NAME, MAX_TOKENS
 
 
@@ -132,21 +131,6 @@ class ModelManager:
         except Exception as e:
             print(f"\n⚠️  Chat completion hatası: {e}", file=sys.stderr)
             return f"Yanıt üretilemedi: {e}"
-
-    def chat_complete_stream(self, messages: List[dict]) -> Iterator[str]:
-        """Dil modelinden pürüzsüz kelime kelime yanıt üretir."""
-        if not self._chat_client:
-            raise RuntimeError("Chat modeli yüklenmedi.")
-        
-        full_text = self.chat_complete(messages)
-        if full_text.startswith("Yanıt üretilemedi:"):
-            yield full_text
-            return
-
-        words = full_text.split(" ")
-        for i, word in enumerate(words):
-            yield word + (" " if i < len(words) - 1 else "")
-            time.sleep(0.003)
 
     def shutdown(self) -> None:
         """Yüklü modelleri bellekten serbest bırakır."""
