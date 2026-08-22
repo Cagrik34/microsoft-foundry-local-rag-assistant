@@ -1,60 +1,47 @@
-# ⚡ Zenith AI — Yerel ve Gizli RAG Asistanı (Enterprise Local RAG)
+# ⚡ Zenith AI — Enterprise Local & Private RAG Assistant
 
-Tamamen çevrimdışı, sıfır veri sızıntısı riskiyle çalışan kurumsal belge tabanlı Soru-Cevap (RAG - Retrieval-Augmented Generation) asistanı.  
-**Microsoft Foundry Local SDK** altyapısını kullanarak yerel `phi-3.5-mini` (3.8B) LLM ve `qwen3-embedding-0.6b` (1024-dim) modellerini yüksek performansla çalıştırır. Hiçbir dış internet bağlantısı, API anahtarı veya bulut servisi gerektirmez.
+**High-Performance Offline Document Intelligence, Zero Data Leakage Retrieval-Augmented Generation & Web Speech Voice Engine.**
 
----
+[![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://opensource.org/licenses/MIT)
+[![Python: 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Platform: Local AI](https://img.shields.io/badge/Platform-Microsoft%20Foundry%20Local-indigo.svg)](https://azure.microsoft.com/)
+[![Privacy: Zero Leakage](https://img.shields.io/badge/Privacy-100%25%20Offline%20Zero%20Data%20Leakage-emerald.svg)](#-security--zero-data-leakage-architecture)
+[![Accessibility: WCAG 2.1](https://img.shields.io/badge/Accessibility-Web%20Speech%20TTS-pink.svg)](#-core-modules--capabilities)
 
-## 🎯 Projenin Amacı ve Sosyal Farkındalık Vizyonu
-
-> *"Yapay zeka teknolojisi yalnızca belirli bir gruba değil, engelleri ve imkânları ne olursa olsun **her insana** hitap edebilmeli, eşit ve engelsiz şekilde erişilebilmelidir."*
-
-**Zenith AI** projesinin temel amacı; en ileri yapay zeka ve RAG teknolojilerini sadece güçlü bir yazılım mimarisi olarak sunmak değil, aynı zamanda **görme engelli bireyler başta olmak üzere toplumun tüm kesimlerine hitap eden evrensel bir erişilebilirlik ve farkındalık modeli** oluşturmaktır.
-
-- **♿ Görme Engelliler İçin Engelsiz Bilgi:** Tüm yapay zeka yanıtlarını tek tıkla (%100 çevrimdışı ve gizli) seslendiren tarayıcı motoru entegrasyonu ile görme engelli bireylerin bilgiye erişimindeki engeller kaldırılmıştır.
-- **🌍 Her İnsana Hitap Eden Fırsat Eşitliği:** Bulut abonelikleri, pahalı sunucular veya internet bağlantısı zorunluluğunu ortadan kaldırarak; bilgiye erişimi her birey için tamamen ücretsiz, gizli ve eşit kılmayı hedefler.
+[🇹🇷 Türkçe Dokümantasyon için tıklayınız](https://github.com/Cagrik34/microsoft-foundry-local-rag-assistant/blob/main/README.tr.md)
 
 ---
 
-## ✨ Öne Çıkan Özellikler
+## 📌 Overview
 
-- 🔒 **%100 Çevrimdışı ve Gizli (Zero Data Leakage):** Verileriniz ve dokümanlarınız cihazınızdan asla dışarı çıkmaz.
-- 🔊 **Görme Engelli Erişilebilirlik ve Farkındalık Desteği (Web Speech TTS):** Yapay zeka yanıtlarını tarayıcının yerel Türkçe ses motoruyla (%100 çevrimdışı, sıfır dış bağımlılık) sesli olarak okuyan erişilebilirlik ve sosyal farkındalık mekanizması.
-- 🌊 **Canlı Yanıt Akışı (Live Streaming Response):** Yanıtı tek seferde bekletmeden, ChatGPT/Gemini stili canlı kelime akışı (`▌` imleci ile hem Web UI hem CLI desteği).
-- **🌐 Çift Modlu Çalışma Mimarisi (Dual-Mode):**
-  - **Gemini Live / Advanced Stili Web Panel (`src/ui/web.py`):** Dalgalı hareketli gradient arka plan, cam efektli (glassmorphic) şeffaf yan panel ve sürükle-bırak dosya yükleme.
-  - **Hızlı Terminal CLI (`app.py`):** Hızlı ve tüy hafifliğinde komut satırı sohbet arayüzü.
-- **📁 Çoklu Doküman Format Desteği:** Markdown (`.md`), Düz Metin (`.txt`), PDF (`.pdf`), Word (`.docx`), Excel (`.xlsx`), PowerPoint (`.pptx`).
-- **📤 Gelişmiş Dosya Yükleme:** Sürükle-bırak yöntemiyle doğrudan tarayıcıdan belge ekleme, kilitli/açık dosya hata yönetimi (`PermissionError`) ve otomatik vektörleştirme.
-- **⚡ Akıllı Kaynak ve Benzerlik Doğrulama:** Üretilen her yanıtın altında bilginin alındığı kaynak dosya adı, bölüm numarası, `%85` gibi yüzdelik benzerlik etiketleri ve süre metrikleri.
-- **🚪 İşletim Sistemi Seviyesinde Temiz Kapanış:** Çıkış yapıldığında modelleri RAM'den boşaltan ve 0.3 saniyede `os._exit(0)` ile terminali anında serbest bırakan kapatma mekanizması.
-- **💾 SQLite Vektör Deposu:** Ekstra veritabanı sunucusu gerektirmeyen, hafif ve yerel SQLite vektör veritabanı (`rag_knowledge.db`).
-- **📥 Benzerlik Oranlı Sohbet Raporu İndirme (Export Chat):** Web panelinden sohbet oturumunu benzerlik yüzdeleri ve süre metrikleri ile Markdown raporu olarak tek tıkla indirebilme.
+**Zenith AI** is an open-source, institutional-grade local Retrieval-Augmented Generation (RAG) assistant engineered for enterprise document intelligence, confidential corporate analytics, and zero-compromise privacy.
+
+Powered by the **Microsoft Foundry Local SDK**, Zenith AI runs state-of-the-art local Large Language Models (**`phi-3.5-mini`** 3.8B Instruct) and Dense Embedding Models (**`qwen3-embedding-0.6b`** 1024-dimensional) directly on your local CPU/hardware. Operating under a **Zero Data Leakage Architecture**, zero documents, embeddings, telemetry, or query strings ever leave your local machine.
 
 ---
 
-## 🏗️ Sistem Mimarisi ve Mühendislik Tasarımı
+## 🏛️ Architecture & Data Flow Diagram
 
 ```text
                                ┌────────────────────────────────────────┐
-                               │      Kullanıcı Arayüzü (UI Layer)      │
+                               │      User Interaction Layer (UI)       │
                                │  [Web (Streamlit)]  |  [Terminal CLI]  │
                                └───────────────────┬────────────────────┘
                                                    │ (Event Dispatch)
                                                    ▼
                                ┌────────────────────────────────────────┐
-                               │        RAG Orkestrasyon Motoru         │
+                               │        RAG Orchestration Engine        │
                                │          (src/core/engine.py)          │
                                └─────────┬────────────────────┬─────────┘
                                          │                    │
-                    (Vektör Arama)       │                    │ (Metin İstemcisi)
+                    (Vector Search)      │                    │ (Text Generation)
                                          ▼                    ▼
              ┌───────────────────────────────────┐    ┌───────────────────────────────────┐
-             │ SQLite Vektör Deposu (database.py)│    │ Model Yöneticisi (src/core/models)│
-             │   - Kosinüs Benzerliği            │    │   - ThreadPoolExecutor İzolasyonu │
-             │   - 1024-Boyut Matris Çarpımı     │    │   - Stateless ChatClient Üretimi  │
+             │  SQLite Vector Store (database.py)│    │ Model Manager (src/core/models.py)│
+             │   - Pre-Normalized Cosine Engine  │    │   - Persistent ThreadPool Worker  │
+             │   - Ghost Chunk Deletion Safeguard│    │   - Stateless ChatClient Factory  │
              └───────────────────────────────────┘    └─────────────────┬─────────────────┘
-                                                                        │ (C++ Native gRPC)
+                                                                        │ (Native C++ gRPC)
                                                                         ▼
                                                       ┌───────────────────────────────────┐
                                                       │    Microsoft Foundry Local SDK    │
@@ -65,170 +52,166 @@ Tamamen çevrimdışı, sıfır veri sızıntısı riskiyle çalışan kurumsal 
 
 ---
 
-## 🛠️ Teknik Darboğazlar ve Çözüm Mimarisi (Architectural Breakthroughs)
+## 🌟 Core Modules & Capabilities
 
-Proje geliştirme sürecinde tespit edilen **kritik sistem darboğazları ve uygulanan mühendislik çözümleri** aşağıda açıklanmıştır:
+### 1. 🌐 Dual-Mode Interface Architecture
+- **Gemini Live Glassmorphic Web Panel (`src/ui/web.py`):** Dynamic gradient mesh animations, floating aura orbs, glassmorphic transparent navigation, drag-and-drop file uploader with deduplication, and exportable Markdown audit trails.
+- **Ultra-Lightweight Terminal CLI (`app.py` / `src/ui/cli.py`):** ANSI-styled terminal console with Windows UTF-8 stream decoding (`cp1254` crash-resilient) for headless execution and rapid developer interaction.
 
-### 1. Streamlit AsyncIO Event Loop & C++ gRPC Thread Kilitlenmesi (Deadlock)
-* **Darboğaz:** Microsoft Foundry SDK'nın C++ gRPC istemcisi, Streamlit'in `asyncio` event loop'u çalışırken ana Python iş parçacığından senkron çağrıldığında event loop gRPC kanalını kilitliyordu (thread starvation). Bu durum yanıtların 180s boyunca donmasına ve `Operation was cancelled` hatasına yol açıyordu.
-* **Çözüm:** `src/core/models.py` içerisinde `chat_complete` ve `generate_embedding` metodları `concurrent.futures.ThreadPoolExecutor(max_workers=1)` ile izole bir işletim sistemi iş parçacığına taşındı. C++ gRPC çağrıları AsyncIO döngüsünden tamamen bağımsız hale getirilerek kilitlenme çözüldü.
+### 2. 📑 Multi-Format Ingestion Pipeline (`src/core/document_loader.py`)
+- Deep text and structural extraction supporting:
+  - **Markdown (`.md`) & Plain Text (`.txt`):** Multi-encoding detection (`utf-8`, `utf-8-sig`, `cp1254`, `latin-1`).
+  - **Adobe PDF (`.pdf`):** Multi-page PDF extraction via `pypdf`.
+  - **Microsoft Word (`.docx`):** Paragraph and table extraction via `python-docx`.
+  - **Microsoft Excel (`.xlsx`):** Multi-sheet tabular parsing via `openpyxl`.
+  - **Microsoft PowerPoint (`.pptx`):** Slide and shape text extraction via `python-pptx`.
+- **Extraction Error Safeguard:** Parser exceptions and missing libraries gracefully yield empty buffers rather than vectorizing error strings into the knowledge database.
 
-### 2. Oturumlar Arası Bağlam Şişmesi (Session Memory Leak / Context Accumulation)
-* **Darboğaz:** `ChatClient` nesnesi uzun süreli oturumlarda arka arkaya yapılan sorgularda eski sohbet geçmişini ve bağlamları hafızasında tutmaya devam ediyordu. 2. ve 3. sorularda bağlam boyutu 4.800+ karaktere ulaşıp CPU'yu kilitliyordu.
-* **Çözüm:** `chat_complete` içerisinde her yeni RAG sorgusu için `self._chat_model.get_chat_client()` ile **durumsuz (stateless)** temiz bir istemci nesnesi üretilmesi sağlandı. Bağlam boyutu sabit tutularak bellek şişmesi engellendi.
+### 3. 🗄️ SQLite Vector Store & Pre-Normalized Cosine Engine (`src/core/database.py`)
+- Self-contained serverless SQLite vector store (`data/rag_knowledge.db`).
+- **L2 Pre-Normalization:** Embeddings are normalized upon insertion, reducing cosine search complexity to a single matrix dot product (`matrix @ q_vec`).
+- **Ghost Chunk Prevention:** Purges stale chunks on document re-indexing before writing new partitions.
 
-### 3. C++ Native gRPC 120.0s RPC Zaman Aşımı Sınırı
-* **Darboğaz:** Microsoft Foundry SDK'nın native C++ katmanında `complete_chat` için 120.0 saniyelik sabit bir RPC kuralı vardı. 7B modeller CPU üzerinde ağır metinlerde 120s duvarına çarpıyordu.
-* **Çözüm:** Model katmanında Microsoft'un yüksek hızlı **`phi-3.5-mini`** (3.8B Instruct) modeline geçildi. CPU ön-işleme (prefill) ve yanıt süresi **0.24s - 15s** seviyesine düşürülerek 120s zaman aşımı riski tamamen ortadan kaldırıldı.
+### 4. ⚡ RAG Orchestration & Single-Pass Summarization (`src/core/engine.py`)
+- **Single-Pass Multi-Document Summarization (`_summarize_per_file`):** Consolidates document previews into a single LLM inference call, eliminating the $O(N)$ serial latency bottleneck (reducing multi-file summary latency from 75s+ down to ~8s).
+- **Intelligent Query Intent Routing (`_is_summary_query`):** Distinguishes general document-wide overview requests from specific inquiries ("summarize security vulnerabilities"), preserving semantic vector search for domain-specific queries.
+- **Multilingual Support:** Regex-based English language detection dynamically selects the target system prompt.
 
-### 4. Kapanış Esnasında Terminal Asılı Kalması (`RuntimeError: Event loop is closed`)
-* **Darboğaz:** Streamlit `st.stop()` çağrıldığında AsyncIO event loop'unu kapatıyor, ancak arka plandaki zamanlayıcı döngüsü kapalı loop'a erişmeye çalışıp terminali kilitliyordu.
-* **Çözüm:** `src/ui/web.py` içerisindeki çıkış akışı `_background_kill(0.3)` ile **0.3 saniye içinde `os._exit(0)`** çağrısına yönlendirildi. İşletim sistemi seviyesinde temiz çıkış sağlanarak terminal anında serbest bırakıldı.
+### 5. 🧠 ThreadPool-Isolated Foundry Local Engine (`src/core/models.py`)
+- **Event Loop Deadlock Defense:** C++ native gRPC calls are isolated inside a dedicated `ThreadPoolExecutor(max_workers=1)` to prevent thread starvation against Streamlit's `asyncio` event loop.
+- **Stateless Chat Client:** Instantiates fresh `ChatClient` sessions per turn, preventing context window accumulation and CPU memory leakage.
+
+### 6. 🔊 Web Speech Accessibility & Voice AI (`Web Speech API`)
+- Zero-cloud, 100% offline text-to-speech synthesis using the browser's native Turkish speech engine.
+- One-click screen-reader voice assistant built with WCAG 2.1 accessibility standards in mind.
+
+### 7. 🚪 Instant OS Process Terminus
+- Graceful shutdown workflow that frees loaded models from RAM and invokes clean OS process exit (`os._exit(0)` within 0.3s) to eliminate hanging background event loops.
 
 ---
 
-## ⚙️ Teknik Parametreler ve RAG Ayarları
+## ⚙️ Technical Parameters & Optimized Hyperparameters
 
-| Parametre | Değer | Açıklama |
-|-----------|-------|----------|
-| **Embedding Modeli** | `qwen3-embedding-0.6b` | Türkçe ve çok dilli vektörleştirme (~600 MB, 1024 boyut) |
-| **Chat Modeli** | `phi-3.5-mini` | Microsoft'un yüksek hızlı yerel Instruct dil modeli (~2.2 GB, 3.8B) |
-| **Öbek Uzunluğu (Chunk Size)** | `1000` karakter | Anlamsal bütünlük sağlayan parçalama sınırı |
-| **Öbek Örtüşmesi (Overlap)** | `200` karakter | Parçalar arası bağlam kopmasını önleyen örtüşme |
-| **Benzerlik Eşiği (Similarity)** | `0.05` | Kosinüs benzerliği kabul eşiği |
-| **Arama Limiti (Top-K)** | `3` öbek | Yanıta dahil edilen en yüksek puanlı öbek sayısı |
-| **Bağlam Limiti (Max Context)** | `1600` karakter | LLM'e beslenen maksimum zengin bağlam boyutu (12-15s hızlı CPU yanıtı) |
-| **Max Tokens** | `256` token | Üretilebilecek maksimum yanıt jeton sınırı |
+| Parameter | Configuration | Engineering Rationale |
+|---|---|---|
+| **Embedding Model** | `qwen3-embedding-0.6b` | 1024-dimensional multilingual embeddings (~600 MB RAM, sub-second CPU latency) |
+| **Chat Model** | `phi-3.5-mini` (3.8B) | Microsoft 3.8B Instruct model; fast CPU decode speed (8-10 tok/s), zero timeout risk |
+| **Alternative Chat Model** | `qwen3-4b` | Documented in `src/config.py` for enhanced reasoning and Turkish fluency |
+| **Chunk Partition Size** | `1000` characters | Preserves semantic integrity across paragraphs and tabular rows |
+| **Chunk Overlap** | `200` characters | Sliding window buffer preventing context boundary truncation |
+| **Similarity Threshold** | `0.05` | Cosine similarity baseline filtering noise |
+| **Top-K Passages** | `3` passages | Optimal balance between multi-source coverage and CPU prefill speed |
+| **Max Context Size** | `1000` characters | Optimized for CPU prefill speed (~280 tokens, 3-4s first token latency) |
+| **Max Output Tokens** | `150` tokens | Concise 2-3 sentence structured responses, preventing model verbosity |
 
 ---
 
-## 🛠️ Gereksinimler ve Kurulum
+## 🛠️ Engineering Breakthroughs & Latency Optimizations
 
-- **İşletim Sistemi:** Windows 10/11
-- **Python:** 3.11 veya üstü
-- **RAM:** Minimum 8 GB (16 GB önerilir)
-- **Disk Alanı:** ~3 GB (Modeller ilk çalıştırmada bir kez indirilir ve yerelde saklanır)
+### 1. Streamlit AsyncIO & Native C++ gRPC Deadlock Resolution
+* **Issue:** Microsoft Foundry SDK's native gRPC driver collided with Streamlit's `asyncio` loop on the main thread, resulting in 180s freezes and `Operation was cancelled` timeouts.
+* **Resolution:** All embedding generation and chat completions are routed through a persistent `ThreadPoolExecutor(max_workers=1)` isolated worker.
 
-### 1. Bağımlılıkları Yükleyin
+### 2. Multi-File Summarization Latency Reduction ($O(N) \to O(1)$)
+* **Issue:** Summarizing $N$ indexed files previously fired $N$ sequential synchronous LLM calls ($N \times 25\text{s} = 75\text{s}+$).
+* **Resolution:** Re-engineered into a consolidated contextual prompt, generating complete multi-file executive summaries in a single ~8s inference call.
+
+### 3. Ghost Chunks & L2 Pre-Normalization
+* **Issue:** Re-indexing shortened files left stale orphan chunks in SQLite (`INSERT OR REPLACE` only updated matching indices).
+* **Resolution:** Implemented pre-deletion (`DELETE FROM documents WHERE source_file = ?`) and unit L2 vector storage.
+
+### 4. Windows UTF-8 Terminal Crash Defense
+* **Issue:** Windows command prompt codepages (`cp1254`/`cp1252`) raised `UnicodeEncodeError` when printing status emojis.
+* **Resolution:** Integrated runtime UTF-8 stream wrappers on `sys.stdout` and `sys.stderr` in both `app.py` and `src/ui/cli.py`.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- **Operating System:** Windows 10/11, macOS, or Linux
+- **Python:** Python 3.11 or higher
+- **RAM:** Minimum 8 GB (16 GB recommended)
+- **Disk:** ~3 GB free space (models downloaded once on first launch)
+
+### 1. Clone & Install Dependencies
 
 ```bash
+# Clone the repository
+git clone https://github.com/Cagrik34/microsoft-foundry-local-rag-assistant.git
+cd microsoft-foundry-local-rag-assistant
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-### 2. Uygulamayı Başlatın
+### 2. Launch Application
 
 ```bash
 python app.py
 ```
 
-Başlangıçta interaktif mod seçim ekranı karşılayacaktır:
+The interactive launch screen allows you to select your preferred execution mode:
 
 ```text
 ╭─────────────────────────────────────────────────────────────╮
-│  [AI] ZENITH AI - Yerel RAG Akıllı Asistanı                 │
-│  [SEC] Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI        │
+│  ⚡ ZENITH AI — Yerel RAG Akıllı Asistanı                   │
+│  🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI           │
 ├─────────────────────────────────────────────────────────────┤
-│  [MODE] Çalıştırma Modunu Seçin:                            │
+│  🚀 Çalıştırma Modunu Seçin:                                │
 │                                                             │
-│   [1] Terminal (CLI) Modu                                   │
-│   [2] Web Arayüzü (Streamlit - Tarayıcıda Açılır)           │
+│   [1] 💻 Terminal (CLI) Modu                                │
+│   [2] 🌐 Web Arayüzü (Streamlit — Tarayıcıda Açılır)        │
 ╰─────────────────────────────────────────────────────────────╯
-
-Seçiminiz (1 veya 2) [Varsayılan: 1]:
 ```
 
-* **`1` veya Enter:** Terminal CLI modunda çalışmayı başlatır.
-* **`2`:** Otomatik olarak tarayıcıyı açar ve **Gemini Live stili Web Paneli** başlatır.
-* *(Doğrudan Web arayüzünü çalıştırmak için `streamlit run src/ui/web.py` komutu da kullanılabilir.)*
+* **Option `1` (or Enter):** Starts the fast command-line terminal interface.
+* **Option `2`:** Launches the modern Gemini Live-style Streamlit web portal in your default browser.
+* *(Direct Web UI launch: `streamlit run src/ui/web.py`)*
 
 ---
 
-## 📖 Kullanım ve Komutlar
-
-1. Belgelerinizi `documents/` klasörüne ekleyin (veya Web panelinden sürükleyip bırakın).
-2. `/indeksle` komutuyla (veya Web panelindeki **🔄 İndeksle** butonuyla) belgeleri veritabanına kaydedin.
-3. Sorularınızı sormaya başlayın!
-
-### 💻 Terminal (CLI) Komutları
-
-| Komut | Açıklama |
-|-------|----------|
-| `/web` | Streamlit Web Arayüzünü tarayıcıda başlatır. |
-| `/indeksle` | `documents/` dizinindeki belgeleri okur, öbeklere böler ve vektör veritabanına kaydeder. |
-| `/durum` | Veritabanı durumunu, dosya ve öbek (chunk) sayılarını gösterir. |
-| `/temizle` | İndekslenmiş tüm verileri veritabanından siler. |
-| `/yardim` | Kullanım kılavuzunu gösterir. |
-| `/cikis` | Programdan çıkar ve modelleri RAM'den boşaltır. |
-
----
-
-## 📂 Proje Dizin Mimarisi
+## 📁 Directory Structure
 
 ```text
 microsoft-foundry-local-rag-assistant/
-├── documents/                  # Belgelerin tutulduğu ana dizin (.md, .pdf, .docx, .xlsx vb.)
-├── data/                       # SQLite veritabanı (rag_knowledge.db)
-├── src/                        # ⚡ Modüler Kaynak Kod Klasörü
-│   ├── __init__.py             # Python paket tanımlayıcısı
-│   ├── config.py               # Yapılandırma sabitleri ve model ayarları
-│   ├── core/                   # Çekirdek Yapay Zeka & RAG Motoru
-│   │   ├── __init__.py         # Çekirdek paket tanımlayıcısı
-│   │   ├── models.py           # Thread-safe Foundry Model Yöneticisi & Stateless Client
-│   │   ├── document_loader.py  # Çoklu belge okuyucuları & metin öbekleme (Chunking)
-│   │   ├── database.py         # SQLite Vektör Veritabanı & Kosinüs Benzerliği
-│   │   └── engine.py           # RAG Orkestrasyon Motoru & Arama Akışı
-│   └── ui/                     # Kullanıcı Arayüzleri
-│       ├── __init__.py         # Arayüz paket tanımlayıcısı
-│       ├── cli.py              # Terminal CLI arayüzü & Benzerlik Skorlu Çıktı
-│       └── web.py              # Modern Streamlit Web Arayüzü (Gemini Live Stili)
-├── app.py                      # Ana Uygulama Başlatıcısı (Entrypoint)
-├── requirements.txt            # Proje bağımlılıkları
-├── README.md                   # Kapsamlı Dokümantasyon
-├── LICENSE                     # MIT Lisans Dosyası
-└── .gitignore                  # Git yoksayma kuralları
+├── documents/                  # Ingestion directory (.md, .txt, .pdf, .docx, .xlsx, .pptx)
+├── data/                       # Local SQLite vector database (rag_knowledge.db)
+├── src/                        # Modular source code
+│   ├── __init__.py             # Source package root
+│   ├── config.py               # Hyperparameters, prompt templates, model selection
+│   ├── core/                   # Core AI & RAG Engine
+│   │   ├── __init__.py         # Core package definition
+│   │   ├── models.py           # Thread-safe Foundry SDK manager & stateless client
+│   │   ├── document_loader.py  # Multi-format document parser & text chunking
+│   │   ├── database.py         # SQLite vector store & normalized cosine search
+│   │   └── engine.py           # RAG query coordinator & single-pass summarizer
+│   └── ui/                     # User interfaces
+│       ├── __init__.py         # UI package definition
+│       ├── cli.py              # UTF-8 resilient CLI with live word streaming
+│       └── web.py              # Streamlit web UI (Web Speech TTS, Glassmorphism)
+├── app.py                      # Application entrypoint
+├── requirements.txt            # Python dependencies
+├── README.md                   # Institutional English documentation
+├── README.tr.md                # Kapsamlı Türkçe dokümantasyon
+├── LICENSE                     # MIT License
+└── .gitignore                  # Git ignore rules
 ```
 
 ---
 
-## 🎓 Öğrenim Çıktıları ve Mühendislik Derinliği (Proof of Learning & Mastery)
+## 🛡️ Security & Zero Data Leakage Architecture
 
-Bu proje süresince **Microsoft Foundry Local RAG Müfredatı** kapsamında kopyala-yapıştır kodların ötesine geçilerek bizzat deneyimlenen ve öğrenilen derin teknik kazanımlar:
-
-1. **Vektör Araması ve Kosinüs Benzerliği Matematiği:**  
-   Metinlerin 1024-boyutlu sayısal vektörlere (`qwen3-embedding-0.6b`) dönüştürülerek SQLite üzerinde kosinüs açısı benzerliği ile nasıl saniyeler içinde anlamsal aranacağını bizzat uygulayarak öğrendim.
-2. **C++ Native Driver & AsyncIO Kilitlenme Yönetimi:**  
-   Microsoft Foundry SDK C++ gRPC istemcisi ile Streamlit AsyncIO event loop'unun çakışması sonucu oluşan kilitlenmeleri `concurrent.futures.ThreadPoolExecutor` iş parçacığı izolasyonu ile çözmeyi tecrübe ettim.
-3. **Stateless (Durumsuz) İstemci Mimarisi & Bellek Yönetimi:**  
-   Oturumlar arası bağlam şişmesini ve bellek sızıntılarını (memory leak) engellemek için her sorguda dinamik `get_chat_client()` nesneleri üreterek sistem kararlılığını sağlamayı öğrendim.
-4. **WCAG 2.1 Erişilebilirlik Standartları:**  
-   Görme engelli bireyler için Web Speech API entegrasyonu yaparak, yapay zekanın sadece bir algoritma değil, her insana eşit hitap eden engelsiz bir sosyal çözüm olabileceğini deneyimledim.
+- **100% Offline Execution:** All neural network weights, vector embeddings, and generation pipelines execute locally via Microsoft Foundry Local SDK.
+- **Zero Telemetry & Cloud Exfiltration:** No external network requests, API keys, or third-party cloud services are utilized.
+- **In-Memory Sanitization:** Streamlit chat sessions and cached contexts are maintained strictly in local session memory.
 
 ---
 
-## 📄 Lisans
+## 📜 License & Copyright
 
-Bu proje **MIT Lisansı** altında lisanslanmıştır.
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
 
-```text
-MIT License
+**Author:** Çağrı Giray Keşan  
+**Copyright:** © 2026 Çağrı Giray Keşan. All Rights Reserved.
 
-Copyright (c) 2026 Çağrı Giray Keşan
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
