@@ -10,6 +10,14 @@ import io
 import time
 import subprocess
 
+# Windows konsolunda UTF-8 desteği (emoji çökme koruması)
+if sys.stdout and hasattr(sys.stdout, "buffer"):
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from src.config import DOCUMENTS_DIR, BASE_DIR
 from src.core.models import ModelManager
 from src.core.database import VectorDatabase

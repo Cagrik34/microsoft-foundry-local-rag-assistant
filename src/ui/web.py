@@ -592,28 +592,38 @@ def main() -> None:
         )
 
         if uploaded_files:
-            os.makedirs(DOCUMENTS_DIR, exist_ok=True)
-            saved, skipped = [], []
-            for u_file in uploaded_files:
-                save_path = os.path.join(DOCUMENTS_DIR, u_file.name)
-                try:
-                    with open(save_path, "wb") as f:
-                        f.write(u_file.getbuffer())
-                    saved.append(u_file.name)
-                except PermissionError:
-                    skipped.append(u_file.name)
-                except Exception as e:
-                    skipped.append(f"{u_file.name} ({e})")
+            # Sadece yeni dosyaları kaydet (her rerun'da tekrar yazmayı engelle)
+            if "uploaded_file_names" not in st.session_state:
+                st.session_state.uploaded_file_names = set()
 
-            if saved:
-                st.toast(f"📥 {len(saved)} dosya kaydedildi!", icon="📥")
-            if skipped:
-                st.warning(
-                    f"⚠️ Şu dosyalar kaydedilemedi (açık veya kilitli — önce kapatın):\n"
-                    + "\n".join(f"• {s}" for s in skipped)
-                )
+            current_names = {u.name for u in uploaded_files}
+            new_files = [u for u in uploaded_files if u.name not in st.session_state.uploaded_file_names]
 
-            if saved and st.button("🚀 Yüklenenleri İndeksle", use_container_width=True):
+            if new_files:
+                os.makedirs(DOCUMENTS_DIR, exist_ok=True)
+                saved, skipped = [], []
+                for u_file in new_files:
+                    save_path = os.path.join(DOCUMENTS_DIR, u_file.name)
+                    try:
+                        with open(save_path, "wb") as f:
+                            f.write(u_file.getbuffer())
+                        saved.append(u_file.name)
+                    except PermissionError:
+                        skipped.append(u_file.name)
+                    except Exception as e:
+                        skipped.append(f"{u_file.name} ({e})")
+
+                st.session_state.uploaded_file_names.update(saved)
+
+                if saved:
+                    st.toast(f"📥 {len(saved)} dosya kaydedildi!", icon="📥")
+                if skipped:
+                    st.warning(
+                        f"⚠️ Şu dosyalar kaydedilemedi (açık veya kilitli — önce kapatın):\n"
+                        + "\n".join(f"• {s}" for s in skipped)
+                    )
+
+            if st.button("🚀 Yüklenenleri İndeksle", use_container_width=True):
                 with st.spinner("İndeksleniyor..."):
                     engine.ingest_documents()
                     st.success("İndeksleme tamamlandı!")

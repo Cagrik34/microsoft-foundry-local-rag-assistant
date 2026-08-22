@@ -49,19 +49,22 @@ def scan_documents(directory: str = DOCUMENTS_DIR) -> List[str]:
 def _extract_pdf(file_path: str) -> str:
     """PDF dosyasından metin çıkarır."""
     if pypdf is None:
-        return "[PDF okuma hatası: pypdf kütüphanesi yüklü değil.]"
+        print("⚠️  PDF okunamadı: pypdf kütüphanesi yüklü değil.")
+        return ""
     try:
         reader = pypdf.PdfReader(file_path)
         text_parts = [page.extract_text().strip() for page in reader.pages if page.extract_text()]
         return "\n\n".join(text_parts)
     except Exception as e:
-        return f"[PDF okuma hatası: {e}]"
+        print(f"⚠️  PDF okuma hatası ({file_path}): {e}")
+        return ""
 
 
 def _extract_docx(file_path: str) -> str:
     """Word (.docx) dosyasından metin ve tablo verilerini çıkarır."""
     if docx is None:
-        return "[DOCX okuma hatası: python-docx kütüphanesi yüklü değil.]"
+        print("⚠️  DOCX okunamadı: python-docx kütüphanesi yüklü değil.")
+        return ""
     try:
         doc = docx.Document(file_path)
         parts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
@@ -72,13 +75,15 @@ def _extract_docx(file_path: str) -> str:
                     parts.append(" | ".join(cells))
         return "\n\n".join(parts)
     except Exception as e:
-        return f"[DOCX okuma hatası: {e}]"
+        print(f"⚠️  DOCX okuma hatası ({file_path}): {e}")
+        return ""
 
 
 def _extract_xlsx(file_path: str) -> str:
     """Excel (.xlsx) dosyasındaki tüm sayfaları ve satırları okur."""
     if openpyxl is None:
-        return "[XLSX okuma hatası: openpyxl kütüphanesi yüklü değil.]"
+        print("⚠️  XLSX okunamadı: openpyxl kütüphanesi yüklü değil.")
+        return ""
     try:
         wb = openpyxl.load_workbook(file_path, data_only=True, read_only=True)
         parts = []
@@ -91,13 +96,15 @@ def _extract_xlsx(file_path: str) -> str:
         wb.close()
         return "\n".join(parts)
     except Exception as e:
-        return f"[XLSX okuma hatası: {e}]"
+        print(f"⚠️  XLSX okuma hatası ({file_path}): {e}")
+        return ""
 
 
 def _extract_pptx(file_path: str) -> str:
     """PowerPoint (.pptx) sunumundaki slayt metinlerini çıkarır."""
     if pptx is None:
-        return "[PPTX okuma hatası: python-pptx kütüphanesi yüklü değil.]"
+        print("⚠️  PPTX okunamadı: python-pptx kütüphanesi yüklü değil.")
+        return ""
     try:
         prs = pptx.Presentation(file_path)
         parts = []
@@ -108,7 +115,8 @@ def _extract_pptx(file_path: str) -> str:
                 parts.append("\n".join(slide_txt))
         return "\n\n".join(parts)
     except Exception as e:
-        return f"[PPTX okuma hatası: {e}]"
+        print(f"⚠️  PPTX okuma hatası ({file_path}): {e}")
+        return ""
 
 
 def read_document(file_path: str) -> DocumentInfo:
@@ -180,6 +188,9 @@ def chunk_text(text: str) -> List[str]:
 def process_document(file_path: str) -> DocumentInfo:
     """Tek bir belgeyi okur ve metin öbeklerini (chunks) oluşturur."""
     doc = read_document(file_path)
+    if not doc.content or not doc.content.strip():
+        doc.chunks = []
+        return doc
     raw_chunks = chunk_text(doc.content)
     doc.chunks = [
         TextChunk(content=c, source_file=doc.file_name, chunk_index=i)

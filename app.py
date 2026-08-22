@@ -6,6 +6,15 @@ Uygulamayı başlatan kök giriş modülü. `src.ui.cli` ve `src.ui.web` bileşe
 
 import os
 import sys
+import io
+
+# Windows konsolunda UTF-8 desteği (emoji çökme koruması)
+if sys.stdout and hasattr(sys.stdout, "buffer"):
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 # Proje kök dizinini sys.path'e otomatik ekle
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -6,6 +6,7 @@ Metin öbekleri, arama sonuçları ve Foundry Local SDK model sürücüsü.
 
 import sys
 import time
+import concurrent.futures
 from dataclasses import dataclass, field
 from typing import List, Iterator
 from src.config import EMBEDDING_MODEL, CHAT_MODEL, APP_NAME, MAX_TOKENS
@@ -54,6 +55,7 @@ class ModelManager:
         self._chat_model = None
         self._embedding_client = None
         self._chat_client = None
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def initialize(self) -> None:
         """Foundry Local SDK'yı yapılandırır ve başlatır."""
@@ -96,36 +98,37 @@ class ModelManager:
         if not self._embedding_client:
             raise RuntimeError("Embedding modeli yüklenmedi.")
         try:
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(self._embedding_client.generate_embedding, text)
-                res = future.result(timeout=60)
-                return res.data[0].embedding
+            future = self._executor.submit(self._embedding_client.generate_embedding, text)
+            res = future.result(timeout=60)
+            return res.data[0].embedding
         except Exception:
             return self._embedding_client.generate_embedding(text).data[0].embedding
 
     def generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
-        """Toplu metin listesi için vektörler üretir."""
+        """Toplu metin listesi için vektörler üretir (Thread Pool İzoleli)."""
         if not self._embedding_client:
             raise RuntimeError("Embedding modeli yüklenmedi.")
-        return [item.embedding for item in self._embedding_client.generate_embeddings(texts).data]
+        try:
+            future = self._executor.submit(self._embedding_client.generate_embeddings, texts)
+            res = future.result(timeout=120)
+            return [item.embedding for item in res.data]
+        except Exception:
+            return [item.embedding for item in self._embedding_client.generate_embeddings(texts).data]
 
     def chat_complete(self, messages: List[dict]) -> str:
         """Dil modeline istem gönderir ve yanıt üretir (Stateless & Thread Pool İzoleli)."""
         if not self._chat_model:
             raise RuntimeError("Chat modeli yüklenmedi.")
         try:
-            import concurrent.futures
             # Her RAG sorgusu için temiz, birikimsiz istemci al (bağlam şişmesini önler)
             client = self._chat_model.get_chat_client()
             client.settings.max_tokens = MAX_TOKENS
             client.settings.temperature = 0.3
             client.settings.presence_penalty = 0.1
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(client.complete_chat, messages)
-                res = future.result(timeout=600)
-                return res.choices[0].message.content
+            future = self._executor.submit(client.complete_chat, messages)
+            res = future.result(timeout=600)
+            return res.choices[0].message.content
         except Exception as e:
             print(f"\n⚠️  Chat completion hatası: {e}", file=sys.stderr)
             return f"Yanıt üretilemedi: {e}"
@@ -143,7 +146,7 @@ class ModelManager:
         words = full_text.split(" ")
         for i, word in enumerate(words):
             yield word + (" " if i < len(words) - 1 else "")
-            time.sleep(0.012)
+            time.sleep(0.003)
 
     def shutdown(self) -> None:
         """Yüklü modelleri bellekten serbest bırakır."""
@@ -152,6 +155,7 @@ class ModelManager:
                 self._embedding_model.unload()
             if self._chat_model:
                 self._chat_model.unload()
+            self._executor.shutdown(wait=False)
             print("🔌 Modeller bellekten kaldırıldı.")
         except Exception as e:
             print(f"⚠️  Kapatma hatası: {e}", file=sys.stderr)

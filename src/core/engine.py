@@ -4,6 +4,7 @@ RAG Orkestrasyon Motoru (src/core/engine.py)
 Tüm RAG akışını, sorgulamayı, bağlam oluşturmayı ve dosya özetlemeyi yönetir.
 """
 
+import re
 import time
 from typing import List, Optional, Tuple, Iterator
 from src.config import (
@@ -84,7 +85,7 @@ class RAGEngine:
         context = self._format_context(results)
         context = self._truncate_context(context, MAX_CONTEXT_CHARS)
 
-        is_english = any(w in question.lower().split() for w in ["what", "how", "why", "explain", "where", "the"])
+        is_english = any(w in re.findall(r'\b\w+\b', question.lower()) for w in ["what", "how", "why", "explain", "where", "the"])
         sys_prompt = SYSTEM_PROMPT_EN.format(context=context) if is_english else SYSTEM_PROMPT.format(context=context)
 
         messages = [
@@ -95,13 +96,10 @@ class RAGEngine:
         full_text = self._clean_thinking_tags(full_text)
 
         def word_stream():
-            import re
             words = full_text.split(" ")
             for i, w in enumerate(words):
-                if re.search(r'[\u4e00-\u9fff]', w):
-                    continue
                 yield w + (" " if i < len(words) - 1 else "")
-                time.sleep(0.012)
+                time.sleep(0.003)
 
         return word_stream(), results, context, search_time
 
@@ -124,7 +122,7 @@ class RAGEngine:
         context = self._format_context(results)
         context = self._truncate_context(context, MAX_CONTEXT_CHARS)
 
-        is_english = any(w in question.lower().split() for w in ["what", "how", "why", "explain", "where", "the"])
+        is_english = any(w in re.findall(r'\b\w+\b', question.lower()) for w in ["what", "how", "why", "explain", "where", "the"])
         sys_prompt = SYSTEM_PROMPT_EN.format(context=context) if is_english else SYSTEM_PROMPT.format(context=context)
 
         messages = [
@@ -147,32 +145,48 @@ class RAGEngine:
 
     @staticmethod
     def _is_summary_query(question: str) -> bool:
-        """Sorunun genel özet talebi olup olmadığını kontrol eder."""
-        q = question.lower()
-        kws = ["özetle", "özet", "ozetle", "ozet", "tüm dosya", "hepsini", "ne içeriyor", "summarize", "summary", "overview"]
-        return any(kw in q for kw in kws)
+        """Sorunun genel özet talebi olup olmadığını kontrol eder.
+        Sadece tüm dosyaları kapsayan genel özet isteklerinde True döner.
+        Spesifik sorularda (örn: 'güvenlik açıklarını özetle') normal RAG arama yapılır.
+        """
+        q = question.lower().strip()
+        # Genel özet kalipları (tüm dosya/belge/döküman hedefli)
+        general_patterns = [
+            r'^(tüm|bütün|hepsini|her \u015feyi).*(özetle|özet)',
+            r'^(özetle|özet ver|genel özet)',
+            r'(tüm dosya|bütün belge|hepsini özetle)',
+            r'^(ne içeriyor|neler var|içeriği ne)',
+            r'^(summarize|summary|overview)$',
+            r'^(summarize|give.*summary|overview).*(all|document|everything)',
+        ]
+        return any(re.search(p, q) for p in general_patterns)
 
     def _summarize_per_file(self) -> RAGResponse:
-        """Tüm dosyaları bağımsız olarak özetler ve birleştirir (Halüsinasyon engelleme)."""
+        """Tüm dosyaları tek bir LLM çağrısıyla özetler (N×25s → 1×8s)."""
         files = self.db.get_indexed_files()
         if not files:
             return RAGResponse("Veritabanında belge bulunamadı.", [], "")
 
-        summaries, sources = [], []
-        for f_name in files:
-            chunks = self.db.get_chunks_by_file(f_name, limit=3)
+        all_snippets = []
+        sources = []
+        for f_name in files[:6]:
+            chunks = self.db.get_chunks_by_file(f_name, limit=2)
             if not chunks:
                 continue
-            ctx = self._truncate_context("\n\n".join(chunks), MAX_CONTEXT_CHARS)
-            msgs = [
-                {"role": "system", "content": SYSTEM_PROMPT_SUMMARIZE.format(context=ctx)},
-                {"role": "user", "content": f'"{f_name}" dosyasını kısaca özetle.'}
-            ]
-            summary = self.models.chat_complete(msgs)
-            summaries.append(f"**{f_name}:**\n{summary.strip()}")
+            snippet = "\n".join(chunks)[:400]
+            all_snippets.append(f"[{f_name}]:\n{snippet}")
             sources.append(SearchResult(content=chunks[0], source_file=f_name, chunk_index=0, similarity=1.0))
 
-        return RAGResponse("\n\n".join(summaries), sources, "[Dosya bazlı özet]")
+        combined_context = "\n\n".join(all_snippets)
+        combined_context = self._truncate_context(combined_context, MAX_CONTEXT_CHARS)
+
+        msgs = [
+            {"role": "system", "content": SYSTEM_PROMPT_SUMMARIZE.format(context=combined_context)},
+            {"role": "user", "content": "Yukarıdaki tüm belgelerin ana temalarını dosya dosya kısaca özetle."}
+        ]
+        summary = self.models.chat_complete(msgs)
+        summary = self._clean_thinking_tags(summary)
+        return RAGResponse(summary.strip(), sources, "[Birleşik Belge Özeti]")
 
     @staticmethod
     def _format_context(results: List[SearchResult]) -> str:

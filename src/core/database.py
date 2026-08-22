@@ -42,14 +42,25 @@ class VectorDatabase:
             conn.commit()
 
     def store_chunks_batch(self, records: List[Tuple[str, int, str, List[float]]]) -> int:
-        """Birden fazla metin öbeğini ve vektörünü veritabanına kaydeder."""
-        rows = [
-            (src, idx, txt, np.array(emb, dtype=np.float32).tobytes())
-            for src, idx, txt, emb in records
-        ]
+        """Birden fazla metin öbeğini ve vektörünü veritabanına kaydeder.
+        Aynı dosyaya ait eski chunk'lar önce silinir (ghost chunk engeli).
+        Vektörler L2 normalize edilerek kaydedilir.
+        """
+        # Dosya başına grupla ve eski kayıtları temizle
+        source_files = set(src for src, _, _, _ in records)
+        rows = []
+        for src, idx, txt, emb in records:
+            vec = np.array(emb, dtype=np.float32)
+            norm = np.linalg.norm(vec)
+            if norm > 0:
+                vec = vec / norm
+            rows.append((src, idx, txt, vec.tobytes()))
+
         with self._connect() as conn:
+            for sf in source_files:
+                conn.execute("DELETE FROM documents WHERE source_file = ?", (sf,))
             conn.executemany("""
-                INSERT OR REPLACE INTO documents (source_file, chunk_index, content, embedding)
+                INSERT INTO documents (source_file, chunk_index, content, embedding)
                 VALUES (?, ?, ?, ?)
             """, rows)
             conn.commit()
@@ -72,10 +83,9 @@ class VectorDatabase:
         sources, indices, contents, embeddings = [], [], [], []
         for _id, src, idx, txt, emb_blob in rows:
             vec = np.frombuffer(emb_blob, dtype=np.float32)
-            norm = np.linalg.norm(vec)
-            if norm == 0:
+            if np.linalg.norm(vec) == 0:
                 continue
-            embeddings.append(vec / norm)
+            embeddings.append(vec)  # Vektörler kaydedilirken normalize edildi
             sources.append(src)
             indices.append(idx)
             contents.append(txt)
