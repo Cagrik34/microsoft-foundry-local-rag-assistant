@@ -151,15 +151,15 @@ python app.py
 Başlangıçta interaktif mod seçim ekranı karşılayacaktır:
 
 ```text
-╭─────────────────────────────────────────────────────────────╮
-│  ⚡ ZENITH AI — Yerel RAG Akıllı Asistanı                   │
-│  🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI           │
-├─────────────────────────────────────────────────────────────┤
-│  🚀 Çalıştırma Modunu Seçin:                                │
-│                                                             │
-│   [1] 💻 Terminal (CLI) Modu                                │
-│   [2] 🌐 Web Arayüzü (Streamlit — Tarayıcıda Açılır)        │
-╰─────────────────────────────────────────────────────────────╯
+╭───────────────────────────────────────────────────────────────╮
+│  ⚡ ZENITH AI — Yerel RAG Akıllı Asistanı                     │
+│  🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI             │
+├───────────────────────────────────────────────────────────────┤
+│  🚀 Çalıştırma Modunu Seçin:                                  │
+│                                                               │
+│   [1] 💻 Terminal (CLI) Modu                                  │
+│   [2] 🌐 Web Arayüzü (Streamlit — Tarayıcıda Açılır)          │
+╰───────────────────────────────────────────────────────────────╯
 ```
 
 ---
