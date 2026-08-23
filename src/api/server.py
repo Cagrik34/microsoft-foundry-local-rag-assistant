@@ -241,77 +241,85 @@ async def chat_stream(req: ChatRequest):
 
     async def sse_event_generator():
         t_start = time.time()
-        # 1. Asenkron Hibrit Arama
-        sources, context, search_time = await asyncio.to_thread(engine.query_search, question)
+        try:
+            # 1. Asenkron Hibrit Arama
+            sources, context, search_time = await asyncio.to_thread(engine.query_search, question)
 
-        sources_data = [
-            {
-                "source_file": s.source_file,
-                "chunk_index": s.chunk_index,
-                "similarity": s.similarity,
-                "relevance": s.relevance_percentage,
-                "citation_index": s.citation_index,
-                "match_type": s.match_type,
-                "content": s.content
-            }
-            for s in sources
-        ]
+            sources_data = [
+                {
+                    "source_file": s.source_file,
+                    "chunk_index": s.chunk_index,
+                    "similarity": s.similarity,
+                    "relevance": s.relevance_percentage,
+                    "citation_index": s.citation_index,
+                    "match_type": s.match_type,
+                    "content": s.content
+                }
+                for s in sources
+            ]
 
-        # Başlangıç metaveri olayı
-        init_payload = json.dumps({
-            "type": "meta",
-            "search_time": search_time,
-            "sources": sources_data,
-            "session_id": session_id
-        }, ensure_ascii=False)
-        yield f"data: {init_payload}\n\n"
-
-        # 2. Sistem komutu
-        from src.config import SYSTEM_PROMPT, SYSTEM_PROMPT_EN
-        import re
-        is_english = any(w in re.findall(r'\b\w+\b', question.lower()) for w in ["what", "how", "why", "explain", "where", "the"])
-        sys_prompt = SYSTEM_PROMPT_EN.format(context=context) if is_english else SYSTEM_PROMPT.format(context=context)
-
-        messages = [
-            {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": question}
-        ]
-
-        # 3. Model çıkarımını asenkron worker thread'de çalıştır (Sıfır kilitlenme)
-        full_text = await asyncio.to_thread(model_manager.chat_complete, messages)
-        full_text = engine._clean_thinking_tags(full_text)
-
-        # 4. Kelime kelime akıcı yayın
-        words = full_text.split(" ")
-        for i, w in enumerate(words):
-            chunk = w + (" " if i < len(words) - 1 else "")
-            chunk_payload = json.dumps({
-                "type": "chunk",
-                "text": chunk
+            # Başlangıç metaveri olayı
+            init_payload = json.dumps({
+                "type": "meta",
+                "search_time": search_time,
+                "sources": sources_data,
+                "session_id": session_id
             }, ensure_ascii=False)
-            yield f"data: {chunk_payload}\n\n"
-            await asyncio.sleep(0.01)
+            yield f"data: {init_payload}\n\n"
 
-        gen_time = round(time.time() - t_start, 2)
+            # 2. Sistem komutu
+            from src.config import SYSTEM_PROMPT, SYSTEM_PROMPT_EN
+            import re
+            is_english = any(w in re.findall(r'\b\w+\b', question.lower()) for w in ["what", "how", "why", "explain", "where", "the"])
+            sys_prompt = SYSTEM_PROMPT_EN.format(context=context) if is_english else SYSTEM_PROMPT.format(context=context)
 
-        # Asistan yanıtını kaydet
-        db.save_message(
-            session_id=session_id,
-            role="assistant",
-            content=full_text,
-            sources=sources_data,
-            search_time=search_time,
-            gen_time=gen_time
-        )
+            messages = [
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": question}
+            ]
 
-        # Bitiş olayı
-        done_payload = json.dumps({
-            "type": "done",
-            "full_text": full_text,
-            "gen_time": gen_time,
-            "search_time": search_time
-        }, ensure_ascii=False)
-        yield f"data: {done_payload}\n\n"
+            # 3. Model çıkarımını asenkron worker thread'de çalıştır (Sıfır kilitlenme)
+            full_text = await asyncio.to_thread(model_manager.chat_complete, messages)
+            full_text = engine._clean_thinking_tags(full_text)
+
+            # 4. Kelime kelime akıcı yayın
+            words = full_text.split(" ")
+            for i, w in enumerate(words):
+                chunk = w + (" " if i < len(words) - 1 else "")
+                chunk_payload = json.dumps({
+                    "type": "chunk",
+                    "text": chunk
+                }, ensure_ascii=False)
+                yield f"data: {chunk_payload}\n\n"
+                await asyncio.sleep(0.01)
+
+            gen_time = round(time.time() - t_start, 2)
+
+            # Asistan yanıtını kaydet
+            db.save_message(
+                session_id=session_id,
+                role="assistant",
+                content=full_text,
+                sources=sources_data,
+                search_time=search_time,
+                gen_time=gen_time
+            )
+
+            # Bitiş olayı
+            done_payload = json.dumps({
+                "type": "done",
+                "full_text": full_text,
+                "gen_time": gen_time,
+                "search_time": search_time
+            }, ensure_ascii=False)
+            yield f"data: {done_payload}\n\n"
+
+        except Exception as exc:
+            err_payload = json.dumps({
+                "type": "error",
+                "content": f"Çıkarım sırasında hata oluştu: {str(exc)}"
+            }, ensure_ascii=False)
+            yield f"data: {err_payload}\n\n"
 
     return StreamingResponse(
         sse_event_generator(),
@@ -319,7 +327,8 @@ async def chat_stream(req: ChatRequest):
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
+            "X-Accel-Buffering": "no",
+            "X-Content-Type-Options": "nosniff"
         }
     )
 

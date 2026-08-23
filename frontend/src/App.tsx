@@ -231,6 +231,19 @@ export const App: React.FC = () => {
                   }
                   return updated;
                 });
+              } else if (data.type === 'error') {
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  const lastIdx = updated.length - 1;
+                  if (lastIdx >= 0 && updated[lastIdx].role === 'assistant') {
+                    updated[lastIdx] = {
+                      ...updated[lastIdx],
+                      content: data.content || 'Bir hata oluştu.',
+                      isStreaming: false,
+                    };
+                  }
+                  return updated;
+                });
               } else if (data.type === 'done') {
                 genTime = data.gen_time || 0;
                 setMessages((prev) => {
