@@ -18,6 +18,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+from typing import Optional
 from src.config import DOCUMENTS_DIR, BASE_DIR
 from src.core.models import ModelManager
 from src.core.database import VectorDatabase
@@ -83,8 +84,17 @@ Komutlar:
 """
 
 
-def launch_web_ui() -> None:
-    """Streamlit web arayüzünü ayrı bir süreçte başlatır ve tarayıcıda açar."""
+def launch_web_ui(model_manager: Optional[ModelManager] = None) -> None:
+    """Streamlit web arayüzünü ayrı bir süreçte başlatır ve tarayıcıda açar.
+    Bellek çakışmasını önlemek için CLI modelleri önce serbest bırakılır.
+    """
+    if model_manager is not None:
+        try:
+            print("🔌 Web arayüzü için CLI modelleri geçici olarak bellekten kaldırılıyor...")
+            model_manager.shutdown()
+        except Exception:
+            pass
+
     print("\n🌐 Web arayüzü başlatılıyor...")
     web_script = os.path.join(BASE_DIR, "src", "ui", "web.py")
     try:
@@ -97,6 +107,13 @@ def launch_web_ui() -> None:
     except Exception as e:
         print(f"\n❌ Web arayüzü başlatılamadı: {e}")
         print("Lütfen 'pip install streamlit' komutunu çalıştırdığınızdan emin olun.\n")
+    finally:
+        if model_manager is not None:
+            try:
+                print("🔄 CLI modelleri yeniden başlatılıyor...")
+                model_manager.initialize()
+            except Exception:
+                pass
 
 
 def handle_index(engine: RAGEngine) -> None:
@@ -176,7 +193,7 @@ def run_cli() -> None:
         try:
             mode_choice = input("Seçiminiz (1 veya 2) [Varsayılan: 1]: ").strip()
         except (KeyboardInterrupt, EOFError):
-            print()
+            print("\n👋 Güle güle!")
             sys.exit(0)
 
         if mode_choice == "" or mode_choice == "1":
@@ -211,38 +228,42 @@ def run_cli() -> None:
     else:
         print("💡 Başlamak için belgelerinizi 'documents/' dizinine ekleyin ve /indeksle komutunu çalıştırın.\n")
 
-    while True:
+    try:
+        while True:
+            try:
+                user_input = input("❓ > ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print()
+                break
+
+            if not user_input:
+                continue
+
+            command = user_input.lower()
+
+            if command in ("/cikis", "/çıkış", "/exit", "/quit"):
+                break
+            elif command in ("/web", "/gui", "/browser"):
+                launch_web_ui(model_manager)
+            elif command in ("/indeksle", "/index"):
+                handle_index(engine)
+            elif command in ("/durum", "/status"):
+                handle_status(db)
+            elif command in ("/temizle", "/clear"):
+                handle_clear(db)
+            elif command in ("/yardim", "/yardım", "/help"):
+                print(HELP_TEXT)
+            elif command.startswith("/"):
+                print(f"⚠️  Bilinmeyen komut: {command}")
+                print("   /yardim yazarak kullanılabilir komutları görün.\n")
+            else:
+                handle_query(engine, user_input)
+    finally:
         try:
-            user_input = input("❓ > ").strip()
-        except (KeyboardInterrupt, EOFError):
-            print()
-            break
-
-        if not user_input:
-            continue
-
-        command = user_input.lower()
-
-        if command in ("/cikis", "/çıkış", "/exit", "/quit"):
-            break
-        elif command in ("/web", "/gui", "/browser"):
-            launch_web_ui()
-        elif command in ("/indeksle", "/index"):
-            handle_index(engine)
-        elif command in ("/durum", "/status"):
-            handle_status(db)
-        elif command in ("/temizle", "/clear"):
-            handle_clear(db)
-        elif command in ("/yardim", "/yardım", "/help"):
-            print(HELP_TEXT)
-        elif command.startswith("/"):
-            print(f"⚠️  Bilinmeyen komut: {command}")
-            print("   /yardim yazarak kullanılabilir komutları görün.\n")
-        else:
-            handle_query(engine, user_input)
-
-    model_manager.shutdown()
-    print("👋 Güle güle!")
+            model_manager.shutdown()
+        except Exception:
+            pass
+        print("👋 Güle güle!")
 
 
 if __name__ == "__main__":
