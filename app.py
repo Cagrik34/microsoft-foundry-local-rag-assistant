@@ -1,7 +1,7 @@
 """
-Zenith AI — Başlatıcı Giriş Noktası (app.py)
-==============================================
-Uygulamayı başlatan kök giriş modülü. `src.ui.cli` ve `src.ui.web` bileşenlerini çağırır.
+Zenith AI — Giriş Noktası (app.py)
+==================================
+Uygulama başlatıcı modülü. Terminal (CLI) veya React + FastAPI web modlarını çalıştırır.
 """
 
 import os

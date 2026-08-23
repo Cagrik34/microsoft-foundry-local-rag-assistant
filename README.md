@@ -45,7 +45,7 @@ Powered by the **Microsoft Foundry Local SDK**, Zenith AI runs local Large Langu
     ┌───────────────────────────────────────┐   ┌────────────────────────────────────────┐
     │    SQLite Local Store & FTS5 Index    │   │      Microsoft Foundry Local SDK       │
     │  - documents (1024-d L2 Vectors)      │   │  - qwen3-embedding-0.6b (1024-d)       │
-    │  - documents_fts (unicode61 BM25)     │   │  - phi-3.5-mini (3.8B Instruct)        │
+    │  - documents_fts (unicode61 BM25)     │   │  - phi-4-mini (3.8B Instruct)          │
     │  - chat_sessions & chat_messages      │   └────────────────────────────────────────┘
     └───────────────────────────────────────┘
 ```
@@ -116,7 +116,7 @@ python app.py
 
 | Component | Specification | Details |
 |---|---|---|
-| **Chat Model** | `phi-3.5-mini` (3.8B Instruct) | Microsoft Foundry Local on-device CPU inference (~18s latency) |
+| **Chat Model** | `phi-4-mini` (3.8B Instruct) | Microsoft Foundry Local on-device CPU inference (~15-20s latency) |
 | **Embedding Model** | `qwen3-embedding-0.6b` | 1024-dimensional dense vectors (~600 MB RAM) |
 | **Database** | SQLite + FTS5 | Serverless, zero configuration, single file (`data/rag_knowledge.db`) |
 | **Search Engine** | Hybrid (Dense + BM25) | Reciprocal Rank Fusion ($k=60, \alpha=0.5$) |

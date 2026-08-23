@@ -15,7 +15,7 @@
 
 **Zenith AI**, Microsoft Foundry Local SDK altyapısını kullanan, kurumsal düzeyde yüksek performanslı ve %100 çevrimdışı bir Doküman Analiz ve Soru-Cevap (RAG) asistanıdır.
 
-**Microsoft Foundry Local SDK** altyapısıyla çalışan sistem, yerel Büyük Dil Modellerini (**`phi-3.5-mini`** 3.8B) ve Vektör Modellerini (**`qwen3-embedding-0.6b`** 1024 boyutlu) doğrudan bilgisayarınızın kendi donanımında (CPU) çalıştırır. Sıfır bulut bağımlılığı, sıfır API maliyeti ve sıfır veri sızıntısı ile tüm gizli şirket dokümanlarınız ve analizleriniz cihazınızda kalır.
+**Microsoft Foundry Local SDK** altyapısıyla çalışan sistem, yerel Büyük Dil Modellerini (**`phi-4-mini`** 3.8B) ve Vektör Modellerini (**`qwen3-embedding-0.6b`** 1024 boyutlu) doğrudan bilgisayarınızın kendi donanımında (CPU) çalıştırır. Sıfır bulut bağımlılığı, sıfır API maliyeti ve sıfır veri sızıntısı ile tüm gizli şirket dokümanlarınız ve analizleriniz cihazınızda kalır.
 
 ---
 
@@ -43,7 +43,7 @@
     ┌───────────────────────────────────────┐   ┌────────────────────────────────────────┐
     │    SQLite Yerel Depo & FTS5 İndeksi   │   │      Microsoft Foundry Local SDK       │
     │  - documents (1024-d L2 Vektörler)    │   │  - qwen3-embedding-0.6b (1024-d)       │
-    │  - documents_fts (unicode61 BM25)     │   │  - phi-3.5-mini (3.8B Instruct)        │
+    │  - documents_fts (unicode61 BM25)     │   │  - phi-4-mini (3.8B Instruct)          │
     │  - chat_sessions & chat_messages      │   └────────────────────────────────────────┘
     └───────────────────────────────────────┘
 ```
@@ -108,7 +108,7 @@ python app.py
 
 | Bileşen | Değer | Açıklama |
 |---|---|---|
-| **Çıkarım Modeli** | `phi-3.5-mini` (3.8B) | Microsoft Foundry Local CPU çıkarımı (~18s yanıt süresi) |
+| **Çıkarım Modeli** | `phi-4-mini` (3.8B) | Microsoft Foundry Local CPU çıkarımı (~15-20s yanıt süresi) |
 | **Vektör Modeli** | `qwen3-embedding-0.6b` | 1024 boyutlu yoğun vektör (~600 MB RAM) |
 | **Veritabanı** | SQLite + FTS5 | Sunucusuz, sıfır yapılandırma, tek dosya (`data/rag_knowledge.db`) |
 | **Arama Motoru** | Hibrit (Dense + BM25) | Reciprocal Rank Fusion ($k=60, \alpha=0.5$) |

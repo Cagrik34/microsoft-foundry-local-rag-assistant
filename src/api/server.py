@@ -106,22 +106,23 @@ def ingest_documents():
 
 @app.post("/api/documents/upload")
 async def upload_documents(files: List[UploadFile] = File(...)):
-    """Dosyaları 'documents/' dizinine kaydeder ve indeksler."""
+    """Dosyaları 'documents/' dizinine güvenli şekilde kaydeder ve indeksler."""
     os.makedirs(DOCUMENTS_DIR, exist_ok=True)
     saved_files = []
     skipped_files = []
 
     for file in files:
-        ext = os.path.splitext(file.filename)[1].lower()
+        safe_filename = os.path.basename(file.filename or "document.txt")
+        ext = os.path.splitext(safe_filename)[1].lower()
         if ext not in SUPPORTED_EXTENSIONS:
-            skipped_files.append(file.filename)
+            skipped_files.append(safe_filename)
             continue
 
-        save_path = os.path.join(DOCUMENTS_DIR, file.filename)
+        save_path = os.path.join(DOCUMENTS_DIR, safe_filename)
         content = await file.read()
         with open(save_path, "wb") as f:
             f.write(content)
-        saved_files.append(file.filename)
+        saved_files.append(safe_filename)
 
     ingest_res = engine.ingest_documents()
     return {
@@ -184,13 +185,13 @@ def delete_session(session_id: str):
 # ── SSE Canlı Akış (Streaming Chat) ──
 
 @app.post("/api/chat/stream")
-def chat_stream(req: ChatRequest):
-    """Server-Sent Events (SSE) protokolü ile kelime kelime canlı yanıt akışı sunar."""
+async def chat_stream(req: ChatRequest):
+    """Server-Sent Events (SSE) protokolü ile asenkron, kesintisiz ve canlı yanıt akışı sunar."""
     question = req.question.strip()
     session_id = req.session_id or db.create_session(question[:35])
 
     if db.get_chunk_count() == 0:
-        def empty_gen():
+        async def empty_gen():
             payload = json.dumps({
                 "type": "error",
                 "content": "Veritabanında indeksli doküman bulunmuyor. Lütfen önce dokümanlarınızı indeksleyin."
@@ -201,10 +202,10 @@ def chat_stream(req: ChatRequest):
     # Kullanıcı mesajını kaydet
     db.save_message(session_id=session_id, role="user", content=question)
 
-    def sse_event_generator():
+    async def sse_event_generator():
         t_start = time.time()
-        # 1. Hibrit Arama
-        sources, context, search_time = engine.query_search(question)
+        # 1. Asenkron Hibrit Arama
+        sources, context, search_time = await asyncio.to_thread(engine.query_search, question)
 
         sources_data = [
             {
@@ -228,21 +229,31 @@ def chat_stream(req: ChatRequest):
         }, ensure_ascii=False)
         yield f"data: {init_payload}\n\n"
 
-        # 2. Geçmiş bağlamını al
-        past_msgs = db.get_session_messages(session_id)
-        chat_history = [{"role": m.role, "content": m.content} for m in past_msgs]
+        # 2. Sistem komutu
+        from src.config import SYSTEM_PROMPT, SYSTEM_PROMPT_EN
+        import re
+        is_english = any(w in re.findall(r'\b\w+\b', question.lower()) for w in ["what", "how", "why", "explain", "where", "the"])
+        sys_prompt = SYSTEM_PROMPT_EN.format(context=context) if is_english else SYSTEM_PROMPT.format(context=context)
 
-        # 3. Model çıkarım akışı
-        stream_gen = engine.query_generate(question, sources, context, chat_history=chat_history)
-        full_text = ""
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": question}
+        ]
 
-        for chunk in stream_gen:
-            full_text += chunk
+        # 3. Model çıkarımını asenkron worker thread'de çalıştır (Sıfır kilitlenme)
+        full_text = await asyncio.to_thread(model_manager.chat_complete, messages)
+        full_text = engine._clean_thinking_tags(full_text)
+
+        # 4. Kelime kelime akıcı yayın
+        words = full_text.split(" ")
+        for i, w in enumerate(words):
+            chunk = w + (" " if i < len(words) - 1 else "")
             chunk_payload = json.dumps({
                 "type": "chunk",
                 "text": chunk
             }, ensure_ascii=False)
             yield f"data: {chunk_payload}\n\n"
+            await asyncio.sleep(0.01)
 
         gen_time = round(time.time() - t_start, 2)
 

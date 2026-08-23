@@ -91,18 +91,30 @@ class ModelManager:
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def initialize(self) -> None:
-        """Foundry Local SDK'yı yapılandırır ve başlatır."""
+        """Foundry Local çalışma zamanını başlatır."""
         from foundry_local_sdk import Configuration, FoundryLocalManager
+        try:
+            if FoundryLocalManager.instance is not None:
+                self._manager = FoundryLocalManager.instance
+                return
+        except Exception:
+            pass
+
         print("⚙️  Foundry Local SDK başlatılıyor...")
-        config = Configuration(app_name=APP_NAME)
-        FoundryLocalManager.initialize(config)
-        self._manager = FoundryLocalManager.instance
+        try:
+            config = Configuration(app_name=APP_NAME)
+            FoundryLocalManager.initialize(config)
+            self._manager = FoundryLocalManager.instance
+        except Exception:
+            self._manager = FoundryLocalManager.instance
         print("✅ SDK hazır.\n")
 
     def load_embedding_model(self) -> None:
         """Embedding modelini indirir ve belleğe yükler."""
         if self._embedding_client:
             return
+        if not self._manager:
+            self.initialize()
         print(f"📦 Embedding modeli yükleniyor: {EMBEDDING_MODEL}")
         self._embedding_model = self._manager.catalog.get_model(EMBEDDING_MODEL)
         self._embedding_model.download(lambda p: print(f"\r   İndiriliyor: {p:.1f}%", end="", flush=True))
@@ -115,6 +127,8 @@ class ModelManager:
         """Chat dil modelini indirir ve belleğe yükler."""
         if self._chat_client:
             return
+        if not self._manager:
+            self.initialize()
         print(f"📦 Chat modeli yükleniyor: {CHAT_MODEL}")
         self._chat_model = self._manager.catalog.get_model(CHAT_MODEL)
         self._chat_model.download(lambda p: print(f"\r   İndiriliyor: {p:.1f}%", end="", flush=True))
@@ -132,9 +146,9 @@ class ModelManager:
             self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def generate_embedding(self, text: str) -> List[float]:
-        """Metin için vektör üretir."""
+        """Metin için 1024 boyutlu yoğun vektör üretir."""
         if not self._embedding_client:
-            raise RuntimeError("Embedding modeli yüklenmedi.")
+            self.load_embedding_model()
         try:
             return self._embedding_client.generate_embedding(text).data[0].embedding
         except Exception:
@@ -146,7 +160,7 @@ class ModelManager:
     def generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
         """Toplu metin listesi için vektörler üretir."""
         if not self._embedding_client:
-            raise RuntimeError("Embedding modeli yüklenmedi.")
+            self.load_embedding_model()
         try:
             return [item.embedding for item in self._embedding_client.generate_embeddings(texts).data]
         except Exception:
@@ -159,7 +173,7 @@ class ModelManager:
         Gerekirse taze istemci ile otomatik kurtarma yapar.
         """
         if not self._chat_model:
-            raise RuntimeError("Chat modeli yüklenmedi.")
+            self.load_chat_model()
         try:
             client = self._chat_client or self._chat_model.get_chat_client()
             client.settings.max_tokens = MAX_TOKENS
