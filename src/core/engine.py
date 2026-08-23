@@ -107,11 +107,11 @@ class RAGEngine:
 
         messages = [{"role": "system", "content": sys_prompt}]
 
-        # Çok turlu hafıza desteği (Son 2 konuşma turu)
+        # Çok turlu hafıza desteği (Yalnızca önceki konuşma turları)
         if chat_history:
-            for turn in chat_history[-4:]:
-                if turn.get("role") in ("user", "assistant") and turn.get("content"):
-                    messages.append({"role": turn["role"], "content": turn["content"]})
+            prior_turns = [t for t in chat_history if t.get("role") in ("user", "assistant") and t.get("content") and t.get("content") != question]
+            for turn in prior_turns[-4:]:
+                messages.append({"role": turn["role"], "content": turn["content"]})
 
         # Mevcut soru
         messages.append({"role": "user", "content": question})

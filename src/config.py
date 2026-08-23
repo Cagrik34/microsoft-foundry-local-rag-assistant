@@ -31,8 +31,8 @@ MIN_CHUNK_LENGTH = 50        # Minimum geçerli öbek uzunluğu
 TOP_K = 3                    # Aramada getirilecek en yüksek puanlı öbek sayısı
 SIMILARITY_THRESHOLD = 0.05  # Minimum kosinüs benzerlik eşiği
 MAX_CHUNKS_PER_FILE = 3      # Aynı dosyadan seçilebilecek maksimum öbek sayısı
-MAX_CONTEXT_CHARS = 1200     # Bağlam penceresi karakter sınırı (CPU hız/kapsam dengesi)
-MAX_TOKENS = 256             # LLM yanıt üretim limiti (token)
+MAX_CONTEXT_CHARS = 1000    # Bağlam penceresi karakter sınırı (CPU hız/kapsam dengesi)
+MAX_TOKENS = 180             # LLM yanıt üretim limiti (token — CPU için optimal 15s yanıt süresi)
 
 # ── Hibrit Arama (Dense Vector + BM25 FTS5 + RRF) Ayarları ──
 HYBRID_ALPHA = 0.5           # Vektör ve BM25 ağırlık dengesi (0.0 = Sadece BM25, 1.0 = Sadece Vektör)

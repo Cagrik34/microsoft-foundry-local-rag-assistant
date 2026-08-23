@@ -132,58 +132,50 @@ class ModelManager:
             self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
     def generate_embedding(self, text: str) -> List[float]:
-        """Metin için vektör üretir (Thread Pool İzoleli)."""
+        """Metin için vektör üretir."""
         if not self._embedding_client:
             raise RuntimeError("Embedding modeli yüklenmedi.")
-        self._ensure_executor()
         try:
-            future = self._executor.submit(self._embedding_client.generate_embedding, text)
-            res = future.result(timeout=60)
-            return res.data[0].embedding
-        except Exception:
             return self._embedding_client.generate_embedding(text).data[0].embedding
+        except Exception:
+            # Gerekirse istemciyi yenileyip tekrar dene
+            fresh = self._embedding_model.get_embedding_client()
+            self._embedding_client = fresh
+            return fresh.generate_embedding(text).data[0].embedding
 
     def generate_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
-        """Toplu metin listesi için vektörler üretir (Thread Pool İzoleli)."""
+        """Toplu metin listesi için vektörler üretir."""
         if not self._embedding_client:
             raise RuntimeError("Embedding modeli yüklenmedi.")
-        self._ensure_executor()
         try:
-            future = self._executor.submit(self._embedding_client.generate_embeddings, texts)
-            res = future.result(timeout=120)
-            return [item.embedding for item in res.data]
-        except Exception:
             return [item.embedding for item in self._embedding_client.generate_embeddings(texts).data]
+        except Exception:
+            fresh = self._embedding_model.get_embedding_client()
+            self._embedding_client = fresh
+            return [item.embedding for item in fresh.generate_embeddings(texts).data]
 
     def chat_complete(self, messages: List[dict]) -> str:
-        """Dil modeline istem gönderir ve yanıt üretir (Stateless & Thread Pool İzoleli).
-        İlk deneme başarısız olursa taze gRPC istemcisi oluşturarak tekrar dener.
+        """Dil modeline istem gönderir ve doğrudan yanıt üretir.
+        Gerekirse taze istemci ile otomatik kurtarma yapar.
         """
         if not self._chat_model:
             raise RuntimeError("Chat modeli yüklenmedi.")
-        self._ensure_executor()
         try:
             client = self._chat_client or self._chat_model.get_chat_client()
             client.settings.max_tokens = MAX_TOKENS
             client.settings.temperature = 0.3
             client.settings.presence_penalty = 0.1
-
-            future = self._executor.submit(client.complete_chat, messages)
-            res = future.result(timeout=120)
+            res = client.complete_chat(messages)
             return res.choices[0].message.content
         except Exception as e:
-            # İlk deneme başarısız: bozuk gRPC kanalını atıp taze istemci oluştur
             try:
-                print(f"\n⚠️  İlk chat denemesi başarısız ({type(e).__name__}), taze istemci ile yeniden deneniyor...", file=sys.stderr)
+                print(f"\n⚠️  Chat tamamlanamadı ({e}), taze istemci ile deneniyor...", file=sys.stderr)
                 fresh_client = self._chat_model.get_chat_client()
                 fresh_client.settings.max_tokens = MAX_TOKENS
                 fresh_client.settings.temperature = 0.3
                 fresh_client.settings.presence_penalty = 0.1
-                self._chat_client = fresh_client  # Taze istemciyi kalıcı yap
-
-                self._ensure_executor()
-                future = self._executor.submit(fresh_client.complete_chat, messages)
-                res = future.result(timeout=120)
+                self._chat_client = fresh_client
+                res = fresh_client.complete_chat(messages)
                 return res.choices[0].message.content
             except Exception as e2:
                 print(f"\n⚠️  Chat completion hatası: {e2}", file=sys.stderr)
