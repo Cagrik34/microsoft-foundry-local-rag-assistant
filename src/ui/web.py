@@ -438,56 +438,12 @@ def _render_action_bar(text: str, key_id: str) -> None:
 def _render_voice_mic_widget() -> None:
     """Sesli Soru Sorma (Web Speech Recognition STT Mikrofon Butonu)."""
     mic_html = """
-    <div style="margin-bottom: 10px;">
-        <button id="stt_mic_btn" onclick="
-            (function() {
-                var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRec) {
-                    alert('Tarayıcınız Web Speech ses tanıma API desteği sunmuyor. Lütfen Edge veya Chrome kullanın.');
-                    return;
-                }
-                var rec = new SpeechRec();
-                rec.lang = 'tr-TR';
-                rec.continuous = false;
-                rec.interimResults = false;
-
-                var btn = document.getElementById('stt_mic_btn');
-                btn.style.background = 'rgba(239, 68, 68, 0.25)';
-                btn.style.borderColor = '#ef4444';
-                btn.innerHTML = '🔴 Dinleniyor... (Konuşun)';
-
-                rec.onresult = function(e) {
-                    var text = e.results[0][0].transcript;
-                    var chatInputs = window.top.document.querySelectorAll('textarea[data-testid=\"stChatInputTextArea\"]');
-                    if (chatInputs.length > 0) {
-                        var inp = chatInputs[chatInputs.length - 1];
-                        inp.value = text;
-                        inp.dispatchEvent(new Event('input', { bubbles: true }));
-                    }
-                    btn.style.background = 'rgba(30, 41, 59, 0.7)';
-                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
-                };
-
-                rec.onerror = function() {
-                    btn.style.background = 'rgba(30, 41, 59, 0.7)';
-                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
-                };
-
-                rec.onend = function() {
-                    btn.style.background = 'rgba(30, 41, 59, 0.7)';
-                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
-                };
-
-                rec.start();
-            })();
-        " style="
-            background: rgba(30, 41, 59, 0.7);
+    <div style="margin-top: 6px; margin-bottom: 12px;">
+        <button id="stt_mic_btn" style="
+            background: rgba(30, 41, 59, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: #cbd5e1;
-            padding: 6px 14px;
+            padding: 7px 14px;
             border-radius: 10px;
             font-size: 0.8rem;
             font-weight: 500;
@@ -504,6 +460,59 @@ def _render_voice_mic_widget() -> None:
             🎙️ Sesli Soru Sor (Mikrofon)
         </button>
     </div>
+    <script>
+    (function() {
+        var btn = document.getElementById('stt_mic_btn');
+        if (!btn) return;
+        btn.onclick = function() {
+            var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition || (window.top && (window.top.SpeechRecognition || window.top.webkitSpeechRecognition));
+            if (!SpeechRec) {
+                alert('Tarayıcınız Web Speech ses tanıma desteği sunmuyor. Lütfen Edge veya Chrome kullanın.');
+                return;
+            }
+            try {
+                var rec = new SpeechRec();
+                rec.lang = 'tr-TR';
+                rec.continuous = false;
+                rec.interimResults = false;
+
+                btn.style.background = 'rgba(239, 68, 68, 0.25)';
+                btn.style.borderColor = '#ef4444';
+                btn.innerHTML = '🔴 Dinleniyor... (Konuşun)';
+
+                rec.onresult = function(e) {
+                    var text = e.results[0][0].transcript;
+                    var doc = (window.top && window.top.document) ? window.top.document : document;
+                    var chatInputs = doc.querySelectorAll('textarea[data-testid="stChatInputTextArea"]');
+                    if (chatInputs.length > 0) {
+                        var inp = chatInputs[chatInputs.length - 1];
+                        inp.value = text;
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    btn.style.background = 'rgba(30, 41, 59, 0.6)';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
+                };
+
+                rec.onerror = function() {
+                    btn.style.background = 'rgba(30, 41, 59, 0.6)';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
+                };
+
+                rec.onend = function() {
+                    btn.style.background = 'rgba(30, 41, 59, 0.6)';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
+                };
+
+                rec.start();
+            } catch(e) {
+                console.error('STT hatası:', e);
+            }
+        };
+    })();
+    </script>
     """
     if hasattr(st, "html"):
         st.html(mic_html)
