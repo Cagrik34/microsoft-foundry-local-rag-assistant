@@ -92,10 +92,16 @@ class ModelManager:
         self._chat_client.settings.presence_penalty = 0.1
         print(f"✅ Chat modeli hazır: {CHAT_MODEL}\n")
 
+    def _ensure_executor(self) -> None:
+        """ThreadPoolExecutor'ın aktif olduğunu doğrular, gerekirse yeniden oluşturur."""
+        if self._executor is None or getattr(self._executor, "_shutdown", False):
+            self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
     def generate_embedding(self, text: str) -> List[float]:
         """Metin için vektör üretir (Thread Pool İzoleli)."""
         if not self._embedding_client:
             raise RuntimeError("Embedding modeli yüklenmedi.")
+        self._ensure_executor()
         try:
             future = self._executor.submit(self._embedding_client.generate_embedding, text)
             res = future.result(timeout=60)
@@ -107,6 +113,7 @@ class ModelManager:
         """Toplu metin listesi için vektörler üretir (Thread Pool İzoleli)."""
         if not self._embedding_client:
             raise RuntimeError("Embedding modeli yüklenmedi.")
+        self._ensure_executor()
         try:
             future = self._executor.submit(self._embedding_client.generate_embeddings, texts)
             res = future.result(timeout=120)
@@ -118,9 +125,9 @@ class ModelManager:
         """Dil modeline istem gönderir ve yanıt üretir (Stateless & Thread Pool İzoleli)."""
         if not self._chat_model:
             raise RuntimeError("Chat modeli yüklenmedi.")
+        self._ensure_executor()
         try:
-            # Her RAG sorgusu için temiz, birikimsiz istemci al (bağlam şişmesini önler)
-            client = self._chat_model.get_chat_client()
+            client = self._chat_client or self._chat_model.get_chat_client()
             client.settings.max_tokens = MAX_TOKENS
             client.settings.temperature = 0.3
             client.settings.presence_penalty = 0.1
@@ -129,17 +136,31 @@ class ModelManager:
             res = future.result(timeout=600)
             return res.choices[0].message.content
         except Exception as e:
-            print(f"\n⚠️  Chat completion hatası: {e}", file=sys.stderr)
-            return f"Yanıt üretilemedi: {e}"
+            try:
+                client = self._chat_client or self._chat_model.get_chat_client()
+                return client.complete_chat(messages).choices[0].message.content
+            except Exception as e2:
+                print(f"\n⚠️  Chat completion hatası: {e2}", file=sys.stderr)
+                return f"Yanıt üretilemedi: {e2}"
 
     def shutdown(self) -> None:
         """Yüklü modelleri bellekten serbest bırakır."""
         try:
             if self._embedding_model:
-                self._embedding_model.unload()
+                try:
+                    self._embedding_model.unload()
+                except Exception:
+                    pass
+                self._embedding_client = None
             if self._chat_model:
-                self._chat_model.unload()
-            self._executor.shutdown(wait=False)
+                try:
+                    self._chat_model.unload()
+                except Exception:
+                    pass
+                self._chat_client = None
+            if self._executor:
+                self._executor.shutdown(wait=False)
+                self._executor = None
             print("🔌 Modeller bellekten kaldırıldı.")
         except Exception as e:
             print(f"⚠️  Kapatma hatası: {e}", file=sys.stderr)
