@@ -452,7 +452,10 @@ def _render_tts_button(text: str, key_id: str) -> None:
         </button>
     </div>
     """
-    st.components.v1.html(html_code, height=48)
+    if hasattr(st, "html"):
+        st.html(html_code)
+    else:
+        st.components.v1.html(html_code, height=48)
 
 
 def _background_kill(delay: float = 0.3) -> None:
