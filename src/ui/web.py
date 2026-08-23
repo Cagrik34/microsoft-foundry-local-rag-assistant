@@ -580,8 +580,8 @@ def main() -> None:
                 if m.get("sources"):
                     chat_md += "#### Doğrulanan Kaynaklar:\n"
                     for s in m["sources"]:
-                        sim_pct = int(s.get("similarity", 0) * 100)
-                        chat_md += f"- **{s['source_file']}** (Bölüm {s['chunk_index'] + 1}) — %{sim_pct} Benzerlik\n"
+                        rel_pct = s.get("relevance", int(s.get("similarity", 0) * 100))
+                        chat_md += f"- **{s['source_file']}** (Bölüm {s['chunk_index'] + 1}) — %{rel_pct} Alaka Düzeyi\n"
                     chat_md += "\n"
                 chat_md += "---\n\n"
 
@@ -645,12 +645,12 @@ def main() -> None:
                 if message.get("sources"):
                     with st.expander(f"📚 Doğrulanan Kaynaklar ({len(message['sources'])} Alıntı)"):
                         for src in message["sources"]:
-                            sim_pct = int(src["similarity"] * 100)
+                            rel_pct = src.get("relevance", int(src.get("similarity", 0) * 100))
                             st.markdown(
                                 f"""<div class="source-item">
                                     <div class="source-header">
                                         <span class="source-name">📄 {src['source_file']} <span style="font-size:0.75rem;color:#64748b;">(Bölüm {src['chunk_index'] + 1})</span></span>
-                                        <span class="source-score">%{sim_pct} Eşleşme</span>
+                                        <span class="source-score">%{rel_pct} Alaka Düzeyi</span>
                                     </div>
                                 </div>""",
                                 unsafe_allow_html=True
@@ -718,17 +718,17 @@ def main() -> None:
                         "source_file": s.source_file,
                         "chunk_index": s.chunk_index,
                         "similarity": s.similarity,
+                        "relevance": s.relevance_percentage,
                     }
                     for s in sources
                 ]
                 with st.expander(f"📚 Doğrulanan Kaynaklar ({len(sources_data)} Alıntı)"):
                     for src in sources_data:
-                        sim_pct = int(src["similarity"] * 100)
                         st.markdown(
                             f"""<div class="source-item">
                                 <div class="source-header">
                                     <span class="source-name">📄 {src['source_file']} <span style="font-size:0.75rem;color:#64748b;">(Bölüm {src['chunk_index'] + 1})</span></span>
-                                    <span class="source-score">%{sim_pct} Eşleşme</span>
+                                    <span class="source-score">%{src['relevance']} Alaka Düzeyi</span>
                                 </div>
                             </div>""",
                             unsafe_allow_html=True

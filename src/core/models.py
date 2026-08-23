@@ -36,6 +36,16 @@ class SearchResult:
     chunk_index: int
     similarity: float
 
+    @property
+    def relevance_percentage(self) -> int:
+        """Ham kosinüs benzerliğini (0.05 - 0.40 aralığı) sezgisel %50 - %99 anlamsal alaka düzeyine kalibre eder."""
+        if self.similarity <= 0.0:
+            return 0
+        if self.similarity >= 0.9:
+            return 100
+        score = 50 + ((self.similarity - 0.05) / 0.35) * 48
+        return max(10, min(99, int(round(score))))
+
 
 @dataclass
 class RAGResponse:

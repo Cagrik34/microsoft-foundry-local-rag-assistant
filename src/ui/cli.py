@@ -179,10 +179,9 @@ def handle_query(engine: RAGEngine, question: str) -> None:
     print(f"⏱️  Arama: {search_time}s | ⚡ Yanıt: {gen_time}s")
 
     if sources:
-        print("\n📚 Kaynaklar ve Benzerlik Skorları:")
+        print("\n📚 Kaynaklar ve Alaka Düzeyleri:")
         for src in sources:
-            sim_pct = int(src.similarity * 100)
-            print(f"   • {src.source_file}, Bölüm {src.chunk_index + 1} (Benzerlik: %{sim_pct})")
+            print(f"   • {src.source_file}, Bölüm {src.chunk_index + 1} (Alaka: %{src.relevance_percentage})")
     print()
 
 
