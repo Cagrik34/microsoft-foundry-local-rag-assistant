@@ -1,13 +1,16 @@
 """
-Zenith AI — Kurumsal Yerel RAG Web Arayüzü (src/ui/web.py)
-==========================================================
-Microsoft Foundry Local SDK ile çalışan, kurumsal düzeyde çevrimdışı RAG analiz paneli.
+Zenith AI — SOTA Kurumsal Yerel RAG Web Arayüzü (src/ui/web.py)
+===============================================================
+Microsoft Foundry Local SDK ile çalışan; Hibrit Arama (Dense + BM25 RRF),
+İnteraktif Cümle İçi Alıntılar ([1], [2]), Sesli Asistan (STT/TTS) ve
+Çoklu Sohbet Oturumu (Multi-Session) destekli kurumsal analiz paneli.
 """
 
 import os
 import sys
 import time
 import re
+import json
 import streamlit as st
 
 # Proje kök dizinini sys.path'e ekle
@@ -47,7 +50,7 @@ st.set_page_config(
 # ── Kurumsal Düzey Dark-Mode UI / UX CSS ──
 MODERN_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 html, body, [class*="css"], .stApp {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
@@ -69,7 +72,7 @@ html, body, [class*="css"], .stApp {
 }
 
 [data-testid="stSidebarContent"] {
-    padding-top: 1.5rem !important;
+    padding-top: 1.2rem !important;
     padding-bottom: 2rem !important;
 }
 
@@ -83,24 +86,24 @@ header[data-testid="stHeader"] {
     background: rgba(17, 24, 39, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.07);
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     text-align: center;
     backdrop-filter: blur(10px);
 }
 
 .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: #f8fafc;
     line-height: 1.2;
 }
 
 .stat-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-top: 4px;
+    margin-top: 3px;
 }
 
 /* Canlı Durum Rozeti */
@@ -132,9 +135,9 @@ header[data-testid="stHeader"] {
 
 /* Hero Başlık Alanı */
 .hero-container {
-    padding: 0.5rem 0 1.5rem 0;
+    padding: 0.2rem 0 1.2rem 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.2rem;
 }
 
 .hero-title {
@@ -148,50 +151,43 @@ header[data-testid="stHeader"] {
 }
 
 .hero-subtitle {
-    font-size: 0.92rem;
+    font-size: 0.9rem;
     color: #94a3b8;
     margin-top: 4px;
 }
 
-/* Hızlı Başlangıç Soru Kartları */
-.prompt-card {
-    background: rgba(17, 24, 39, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    padding: 14px 16px;
+/* İnteraktif Cümle İçi Alıntı Rozetleri [1], [2] */
+.citation-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #c7d2fe;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 6px;
+    margin: 0 3px;
+    vertical-align: baseline;
+    cursor: default;
     transition: all 0.2s ease;
-    cursor: pointer;
-    height: 100%;
 }
 
-.prompt-card:hover {
-    border-color: rgba(99, 102, 241, 0.4);
-    background: rgba(30, 41, 59, 0.6);
+.citation-pill:hover {
+    background: rgba(99, 102, 241, 0.4);
+    border-color: #818cf8;
+    color: #ffffff;
     transform: translateY(-1px);
-}
-
-.prompt-tag {
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #818cf8;
-    margin-bottom: 6px;
-}
-
-.prompt-text {
-    font-size: 0.88rem;
-    color: #e2e8f0;
-    line-height: 1.4;
 }
 
 /* Kaynak Alıntı Kartları */
 .source-item {
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     border-left: 3px solid #6366f1;
-    border-radius: 8px;
-    padding: 10px 14px;
+    border-radius: 10px;
+    padding: 12px 16px;
     margin-top: 8px;
     font-size: 0.84rem;
 }
@@ -205,6 +201,9 @@ header[data-testid="stHeader"] {
 .source-name {
     font-weight: 600;
     color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .source-score {
@@ -218,13 +217,14 @@ header[data-testid="stHeader"] {
 }
 
 .source-preview {
-    color: #94a3b8;
+    color: #cbd5e1;
     font-size: 0.78rem;
-    margin-top: 6px;
-    line-height: 1.4;
-    max-height: 60px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-top: 8px;
+    line-height: 1.45;
+    background: rgba(8, 12, 20, 0.6);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 /* Telemetri Çubuğu */
@@ -239,6 +239,26 @@ header[data-testid="stHeader"] {
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     margin-top: 8px;
+}
+
+/* Oturum Geçmişi Menü Öğesi */
+.session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(17, 24, 39, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    transition: all 0.2s ease;
+}
+
+.session-item:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(99, 102, 241, 0.3);
 }
 
 /* Chat Input Kutusu */
@@ -265,8 +285,8 @@ header[data-testid="stHeader"] {
 .stButton > button {
     border-radius: 10px !important;
     font-weight: 500 !important;
-    font-size: 0.85rem !important;
-    padding: 6px 14px !important;
+    font-size: 0.84rem !important;
+    padding: 6px 12px !important;
     transition: all 0.2s ease !important;
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
@@ -281,7 +301,7 @@ header[data-testid="stHeader"] {
     background: rgba(15, 23, 42, 0.5) !important;
     border: 1px dashed rgba(255, 255, 255, 0.15) !important;
     border-radius: 12px !important;
-    padding: 12px !important;
+    padding: 10px !important;
 }
 
 [data-testid="stFileUploaderDropzone"]:hover {
@@ -341,7 +361,7 @@ def handle_exit_flow(engine: RAGEngine) -> None:
 
 @st.cache_resource(show_spinner=False)
 def get_rag_engine() -> RAGEngine:
-    """Model yöneticisini ve veritabanını bir kez başlatır (Cache)."""
+    """Model yöneticisini ve hibrit veritabanını bir kez başlatır (Cache)."""
     model_mgr = ModelManager()
     try:
         model_mgr.initialize()
@@ -353,16 +373,28 @@ def get_rag_engine() -> RAGEngine:
     return RAGEngine(model_mgr, db)
 
 
-def _render_tts_button(text: str, key_id: str) -> None:
-    """Web Speech API ile yerel, sıfır gecikmeli seslendirme butonu."""
+def format_in_text_citations(text: str) -> str:
+    """Metin içindeki [1], [2] alıntılarını şık rozetlere dönüştürür."""
+    if not text:
+        return text
+    # [1], [2], [1, 2] kalıplarını bul ve citation-pill sınıfıyla sar
+    def _replace_citation(match):
+        num = match.group(1)
+        return f'<span class="citation-pill">[{num}]</span>'
+
+    return re.sub(r'\[(\d+)\]', _replace_citation, text)
+
+
+def _render_action_bar(text: str, key_id: str) -> None:
+    """Web Speech API ile seslendirme ve mikrofon araç çubuğu."""
     clean_text = re.sub(r'[*#_`~>|\-\[\]\(\)\'\"\\\`]', ' ', text).replace('\n', ' ')
     clean_text = ' '.join(clean_text.split())
 
-    if not clean_text or "Yanıt üretilemedi" in clean_text or "Operation was cancelled" in clean_text:
+    if not clean_text or "Bu bilgi belgelerde" in clean_text or "Yanıt üretilemedi" in clean_text:
         return
 
     html_code = f"""
-    <div style="margin-top: 8px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
         <button id="tts_btn_{key_id}" onclick="
             (function() {{
                 try {{
@@ -381,14 +413,14 @@ def _render_tts_button(text: str, key_id: str) -> None:
             background: rgba(30, 41, 59, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.08);
             color: #cbd5e1;
-            padding: 5px 12px;
+            padding: 4px 10px;
             border-radius: 8px;
             font-size: 0.75rem;
             font-weight: 500;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             font-family: 'Inter', sans-serif;
             transition: all 0.2s ease;
         " onmouseover="this.style.borderColor='rgba(99,102,241,0.4)'; this.style.color='#f8fafc';"
@@ -400,7 +432,83 @@ def _render_tts_button(text: str, key_id: str) -> None:
     if hasattr(st, "html"):
         st.html(html_code)
     else:
-        st.components.v1.html(html_code, height=40)
+        st.components.v1.html(html_code, height=36)
+
+
+def _render_voice_mic_widget() -> None:
+    """Sesli Soru Sorma (Web Speech Recognition STT Mikrofon Butonu)."""
+    mic_html = """
+    <div style="margin-bottom: 10px;">
+        <button id="stt_mic_btn" onclick="
+            (function() {
+                var SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRec) {
+                    alert('Tarayıcınız Web Speech ses tanıma API desteği sunmuyor. Lütfen Edge veya Chrome kullanın.');
+                    return;
+                }
+                var rec = new SpeechRec();
+                rec.lang = 'tr-TR';
+                rec.continuous = false;
+                rec.interimResults = false;
+
+                var btn = document.getElementById('stt_mic_btn');
+                btn.style.background = 'rgba(239, 68, 68, 0.25)';
+                btn.style.borderColor = '#ef4444';
+                btn.innerHTML = '🔴 Dinleniyor... (Konuşun)';
+
+                rec.onresult = function(e) {
+                    var text = e.results[0][0].transcript;
+                    var chatInputs = window.top.document.querySelectorAll('textarea[data-testid=\"stChatInputTextArea\"]');
+                    if (chatInputs.length > 0) {
+                        var inp = chatInputs[chatInputs.length - 1];
+                        inp.value = text;
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    btn.style.background = 'rgba(30, 41, 59, 0.7)';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
+                };
+
+                rec.onerror = function() {
+                    btn.style.background = 'rgba(30, 41, 59, 0.7)';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
+                };
+
+                rec.onend = function() {
+                    btn.style.background = 'rgba(30, 41, 59, 0.7)';
+                    btn.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                    btn.innerHTML = '🎙️ Sesli Soru Sor (Mikrofon)';
+                };
+
+                rec.start();
+            })();
+        " style="
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s ease;
+            width: 100%;
+            justify-content: center;
+        " onmouseover="this.style.borderColor='rgba(99,102,241,0.4)'; this.style.color='#f8fafc';"
+           onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.color='#cbd5e1';">
+            🎙️ Sesli Soru Sor (Mikrofon)
+        </button>
+    </div>
+    """
+    if hasattr(st, "html"):
+        st.html(mic_html)
+    else:
+        st.components.v1.html(mic_html, height=44)
 
 
 def main() -> None:
@@ -424,7 +532,7 @@ def main() -> None:
                     Zenith AI Başlatılıyor
                 </div>
                 <div style="font-size:0.84rem;color:#94a3b8;margin-bottom:20px;line-height:1.5;">
-                    Yerel sinir ağı modelleri ({CHAT_MODEL} & {EMBEDDING_MODEL}) hazırlanıyor...
+                    Hibrit motor ve modeller ({CHAT_MODEL} & {EMBEDDING_MODEL}) hazırlanıyor...
                 </div>
                 <div style="height:4px;width:100%;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-bottom:16px;">
                     <div style="height:100%;width:50%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);border-radius:4px;animation:loadingBar 1.5s infinite ease-in-out;"></div>
@@ -441,7 +549,29 @@ def main() -> None:
     st.session_state["models_loaded"] = True
     splash_slot.empty()
 
-    # ── Sidebar: Sistem & Doküman Yönetimi ──
+    # Aktif Oturum Yönetimi
+    if "current_session_id" not in st.session_state:
+        # Son aktif oturumu al veya yeni aç
+        existing_sessions = engine.db.get_sessions()
+        if existing_sessions:
+            st.session_state.current_session_id = existing_sessions[0].session_id
+        else:
+            st.session_state.current_session_id = engine.db.create_session("İlk Doküman Analizi")
+
+    # Mesajları Veritabanından Yükle
+    saved_messages = engine.db.get_session_messages(st.session_state.current_session_id)
+    messages_state = []
+    for msg in saved_messages:
+        sources_list = json.loads(msg.sources_json) if msg.sources_json else []
+        messages_state.append({
+            "role": msg.role,
+            "content": msg.content,
+            "sources": sources_list,
+            "search_time": msg.search_time,
+            "gen_time": msg.gen_time
+        })
+
+    # ── Sidebar: Sistem, Oturumlar ve Doküman Yönetimi ──
     with st.sidebar:
         st.markdown(
             """
@@ -450,15 +580,42 @@ def main() -> None:
                     <span>⚡</span> Zenith AI
                 </div>
                 <div class="status-badge">
-                    <div class="status-dot"></div> Yerel Aktif
+                    <div class="status-dot"></div> Hibrit Aktif
                 </div>
             </div>
-            <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:16px;">
-                Microsoft Foundry Local SDK • %100 Çevrimdışı
+            <div style="font-size:0.75rem;color:#94a3b8;margin-bottom:14px;">
+                Dense Vector + SQLite FTS5 BM25 + RRF
             </div>
             """,
             unsafe_allow_html=True
         )
+
+        # Yeni Sohbet Butonu
+        if st.button("➕ Yeni Sohbet", use_container_width=True, type="primary"):
+            new_id = engine.db.create_session(f"Analiz #{len(engine.db.get_sessions()) + 1}")
+            st.session_state.current_session_id = new_id
+            st.rerun()
+
+        # Oturum Listesi
+        all_sessions = engine.db.get_sessions()
+        if len(all_sessions) > 1:
+            st.markdown("<div style='font-size:0.75rem;font-weight:600;color:#94a3b8;margin:10px 0 6px 0;'>GEÇMİŞ ANALİZLER</div>", unsafe_allow_html=True)
+            for sess in all_sessions[:5]:
+                is_active = (sess.session_id == st.session_state.current_session_id)
+                col_s1, col_s2 = st.columns([5, 1])
+                with col_s1:
+                    btn_label = f"💬 {sess.title}" if not is_active else f"👉 {sess.title}"
+                    if st.button(btn_label, key=f"sess_{sess.session_id}", use_container_width=True):
+                        st.session_state.current_session_id = sess.session_id
+                        st.rerun()
+                with col_s2:
+                    if st.button("✕", key=f"del_sess_{sess.session_id}", help="Oturumu Sil"):
+                        engine.db.delete_session(sess.session_id)
+                        existing = engine.db.get_sessions()
+                        st.session_state.current_session_id = existing[0].session_id if existing else engine.db.create_session()
+                        st.rerun()
+
+        st.divider()
 
         # Veritabanı İstatistikleri
         stats = engine.db.get_stats()
@@ -467,7 +624,7 @@ def main() -> None:
             st.markdown(
                 f"""<div class="stat-card">
                     <div class="stat-value">{stats['total_chunks']}</div>
-                    <div class="stat-label">Vektör Öbeği</div>
+                    <div class="stat-label">Hibrit Öbek</div>
                 </div>""",
                 unsafe_allow_html=True
             )
@@ -482,24 +639,22 @@ def main() -> None:
 
         st.markdown(
             f"""<div style="display:flex;justify-content:space-between;font-size:0.75rem;color:#64748b;margin:8px 2px 14px 2px;">
-                <span>Vektör DB: <b>{stats['db_size_mb']} MB</b></span>
+                <span>Vektör + BM25: <b>{stats['db_size_mb']} MB</b></span>
                 <span>Boyut: <b>1024d</b></span>
             </div>""",
             unsafe_allow_html=True
         )
 
-        st.divider()
-
-        # İndeksleme ve Veritabanı Eylemleri
+        # Doküman İşlemleri
         st.markdown("<div style='font-size:0.8rem;font-weight:600;color:#cbd5e1;margin-bottom:8px;'>DOKÜMAN İŞLEMLERİ</div>", unsafe_allow_html=True)
         b1, b2 = st.columns(2)
-        if b1.button("🔄 İndeksle", use_container_width=True, type="primary"):
+        if b1.button("🔄 İndeksle", use_container_width=True):
             with st.spinner("Dokümanlar işleniyor..."):
                 res = engine.ingest_documents()
                 if res["total_files"] == 0:
                     st.warning("⚠️ 'documents/' klasöründe geçerli doküman bulunamadı.")
                 else:
-                    st.toast(f"✅ {res['total_chunks']} öbek başarıyla indekslendi!", icon="✅")
+                    st.toast(f"✅ {res['total_chunks']} hibrit öbek indekslendi!", icon="✅")
                     st.rerun()
 
         if b2.button("🗑️ Sıfırla", use_container_width=True):
@@ -508,7 +663,7 @@ def main() -> None:
             st.rerun()
 
         # Dosya Yükleme Dropzone
-        st.markdown("<div style='margin-top:14px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
         uploaded_files = st.file_uploader(
             "Dokümanları yükleyin",
             type=[ext.replace(".", "") for ext in SUPPORTED_EXTENSIONS],
@@ -523,15 +678,15 @@ def main() -> None:
             new_files = [u for u in uploaded_files if u.name not in st.session_state.uploaded_file_names]
             if new_files:
                 os.makedirs(DOCUMENTS_DIR, exist_ok=True)
-                saved, skipped = [], []
+                saved = []
                 for u_file in new_files:
                     save_path = os.path.join(DOCUMENTS_DIR, u_file.name)
                     try:
                         with open(save_path, "wb") as f:
                             f.write(u_file.getbuffer())
                         saved.append(u_file.name)
-                    except Exception as e:
-                        skipped.append(f"{u_file.name} ({e})")
+                    except Exception:
+                        pass
 
                 st.session_state.uploaded_file_names.update(saved)
                 if saved:
@@ -546,12 +701,12 @@ def main() -> None:
         if stats["files"]:
             for f_info in stats["files"]:
                 st.markdown(
-                    f"""<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.8rem;
-                                color:#94a3b8;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
-                        <span style="color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">
+                    f"""<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.78rem;
+                                color:#94a3b8;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
+                        <span style="color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px;">
                             📄 {f_info['name']}
                         </span>
-                        <span style="color:#64748b;font-size:0.75rem;">{f_info['chunks']} öbek</span>
+                        <span style="color:#64748b;font-size:0.72rem;">{f_info['chunks']} öbek</span>
                     </div>""",
                     unsafe_allow_html=True
                 )
@@ -564,24 +719,24 @@ def main() -> None:
         st.markdown(
             f"""<div style="font-size:0.75rem;color:#64748b;line-height:1.6;">
                 <div>🧠 <b>LLM:</b> {CHAT_MODEL}</div>
-                <div>📐 <b>Embed:</b> {EMBEDDING_MODEL}</div>
-                <div>🔒 <b>Gizlilik:</b> %100 Yerel Bellek</div>
+                <div>📐 <b>Vektör:</b> {EMBEDDING_MODEL}</div>
+                <div>🔍 <b>Arama:</b> Hibrit (Dense + BM25)</div>
             </div>""",
             unsafe_allow_html=True
         )
 
-        st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
 
-        if st.session_state.get("messages"):
+        if messages_state:
             chat_md = "# Zenith AI — Doküman Analiz Raporu\n\n"
-            for m in st.session_state.messages:
+            for m in messages_state:
                 role_name = "Kullanıcı" if m["role"] == "user" else "Zenith AI"
                 chat_md += f"### {role_name}\n{m['content']}\n\n"
                 if m.get("sources"):
                     chat_md += "#### Doğrulanan Kaynaklar:\n"
                     for s in m["sources"]:
                         rel_pct = s.get("relevance", int(s.get("similarity", 0) * 100))
-                        chat_md += f"- **{s['source_file']}** (Bölüm {s['chunk_index'] + 1}) — %{rel_pct} Alaka Düzeyi\n"
+                        chat_md += f"- **[{s.get('citation_index', 1)}] {s['source_file']}** (Bölüm {s['chunk_index'] + 1}) — %{rel_pct} Alaka Düzeyi\n"
                     chat_md += "\n"
                 chat_md += "---\n\n"
 
@@ -603,24 +758,21 @@ def main() -> None:
         <div class="hero-container">
             <div class="hero-title">
                 <span>⚡ Zenith AI</span>
-                <span style="font-size:0.9rem;font-weight:500;color:#64748b;padding-left:8px;border-left:1px solid rgba(255,255,255,0.1);">
-                    Kurumsal Yerel RAG Asistanı
+                <span style="font-size:0.88rem;font-weight:500;color:#64748b;padding-left:8px;border-left:1px solid rgba(255,255,255,0.1);">
+                    SOTA Hibrit RAG Asistanı
                 </span>
             </div>
             <div class="hero-subtitle">
-                Kurumsal dokümanlarınızı sıfır bulut bağımlılığı ve tam veri gizliliği ile analiz edin.
+                Dense Vektör + BM25 FTS5 Hibrit Çıkarım Motoru • Cümle İçi Alıntılar • %100 Çevrimdışı Güvenlik
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
     # Karşılama Kartları (Sohbet boşken)
-    if not st.session_state.messages and engine.db.get_chunk_count() > 0:
-        st.markdown("<div style='font-size:0.85rem;font-weight:600;color:#94a3b8;margin-bottom:12px;'>ÖRNEK ANALİZ SORGULARI</div>", unsafe_allow_html=True)
+    if not messages_state and engine.db.get_chunk_count() > 0:
+        st.markdown("<div style='font-size:0.82rem;font-weight:600;color:#94a3b8;margin-bottom:10px;'>ÖRNEK ANALİZ SORGULARI</div>", unsafe_allow_html=True)
         sample_questions = [
             ("Mali Analiz", "Projenin bütçesi ve mali analizi nedir?"),
             ("Sorun & Çözüm", "En sık karşılaşılan sorunlar ve çözümleri nelerdir?"),
@@ -634,24 +786,30 @@ def main() -> None:
                     st.rerun()
 
     # Geçmiş Mesajların Listelenmesi
-    for idx, message in enumerate(st.session_state.messages):
+    for idx, message in enumerate(messages_state):
         avatar = "🧑‍💻" if message["role"] == "user" else "⚡"
         with st.chat_message(message["role"], avatar=avatar):
-            st.markdown(message["content"])
-
             if message["role"] == "assistant":
-                _render_tts_button(message["content"], f"hist_{idx}")
+                formatted_text = format_in_text_citations(message["content"])
+                st.markdown(formatted_text, unsafe_allow_html=True)
+                _render_action_bar(message["content"], f"hist_{idx}")
 
                 if message.get("sources"):
                     with st.expander(f"📚 Doğrulanan Kaynaklar ({len(message['sources'])} Alıntı)"):
                         for src in message["sources"]:
                             rel_pct = src.get("relevance", int(src.get("similarity", 0) * 100))
+                            cit_idx = src.get("citation_index", 1)
+                            m_type = src.get("match_type", "hibrit")
                             st.markdown(
                                 f"""<div class="source-item">
                                     <div class="source-header">
-                                        <span class="source-name">📄 {src['source_file']} <span style="font-size:0.75rem;color:#64748b;">(Bölüm {src['chunk_index'] + 1})</span></span>
-                                        <span class="source-score">%{rel_pct} Alaka Düzeyi</span>
+                                        <span class="source-name">
+                                            <span class="citation-pill">[{cit_idx}]</span>
+                                            📄 {src['source_file']} <span style="font-size:0.75rem;color:#64748b;">(Bölüm {src['chunk_index'] + 1})</span>
+                                        </span>
+                                        <span class="source-score">%{rel_pct} Alaka ({m_type.upper()})</span>
                                     </div>
+                                    <div class="source-preview">{src.get('content', '')[:160]}...</div>
                                 </div>""",
                                 unsafe_allow_html=True
                             )
@@ -659,14 +817,19 @@ def main() -> None:
                 if message.get("search_time") is not None and message.get("gen_time") is not None:
                     st.markdown(
                         f"""<div class="telemetry-pill">
-                            ⏱️ Arama: <b>{message['search_time']}s</b> &nbsp;•&nbsp; ⚡ Çıkarım: <b>{message['gen_time']}s</b>
+                            ⏱️ Hibrit Arama: <b>{message['search_time']}s</b> &nbsp;•&nbsp; ⚡ Çıkarım: <b>{message['gen_time']}s</b>
                         </div>""",
                         unsafe_allow_html=True
                     )
+            else:
+                st.markdown(message["content"])
+
+    # Sesli Soru Sorma Mikrofon Butonu
+    _render_voice_mic_widget()
 
     # Kullanıcı Girdisi ve Soru-Cevap Akışı
     pending_prompt = st.session_state.pop("pending_question", None)
-    user_input = st.chat_input("Dokümanlarınız hakkında bir soru sorun...")
+    user_input = st.chat_input("Dokümanlarınız hakkında bir soru sorun (veya mikrofonu kullanın)...")
     prompt = pending_prompt or user_input
 
     if prompt:
@@ -674,9 +837,15 @@ def main() -> None:
             st.warning("⚠️ Veritabanında indeksli doküman bulunmuyor. Lütfen önce sol menüden 'İndeksle' butonuna tıklayın.")
             st.stop()
 
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        # Kullanıcı mesajını ekrana bas ve kaydet
         with st.chat_message("user", avatar="🧑‍💻"):
             st.markdown(prompt)
+
+        engine.db.save_message(
+            session_id=st.session_state.current_session_id,
+            role="user",
+            content=prompt
+        )
 
         try:
             print(f"\n🔍 [Web UI] Soru: '{prompt}'")
@@ -685,7 +854,7 @@ def main() -> None:
 
         with st.chat_message("assistant", avatar="⚡"):
             t_gen_start = time.time()
-            with st.spinner("🔍 Anlamsal vektör araması yapılıyor..."):
+            with st.spinner("🔍 Hibrit Arama (Dense + FTS5 BM25) yapılıyor..."):
                 sources, context, search_time = engine.query_search(prompt)
 
             try:
@@ -695,15 +864,24 @@ def main() -> None:
 
             answer_placeholder = st.empty()
             answer_placeholder.markdown("⚡ *Yanıt hazırlanıyor...*")
-            stream_gen = engine.query_generate(prompt, sources, context)
+
+            # Çok turlu hafızayı motora ilet
+            stream_gen = engine.query_generate(
+                question=prompt,
+                sources=sources,
+                context=context,
+                chat_history=messages_state
+            )
 
             full_answer = ""
             for chunk in stream_gen:
                 full_answer += chunk
-                answer_placeholder.markdown(full_answer + " ▌")
+                formatted_live = format_in_text_citations(full_answer)
+                answer_placeholder.markdown(formatted_live + " ▌", unsafe_allow_html=True)
 
-            answer_placeholder.markdown(full_answer)
-            _render_tts_button(full_answer, "live")
+            formatted_final = format_in_text_citations(full_answer)
+            answer_placeholder.markdown(formatted_final, unsafe_allow_html=True)
+            _render_action_bar(full_answer, "live")
             gen_time = round(time.time() - t_gen_start, 2)
 
             try:
@@ -719,6 +897,9 @@ def main() -> None:
                         "chunk_index": s.chunk_index,
                         "similarity": s.similarity,
                         "relevance": s.relevance_percentage,
+                        "citation_index": s.citation_index,
+                        "match_type": s.match_type,
+                        "content": s.content
                     }
                     for s in sources
                 ]
@@ -727,27 +908,33 @@ def main() -> None:
                         st.markdown(
                             f"""<div class="source-item">
                                 <div class="source-header">
-                                    <span class="source-name">📄 {src['source_file']} <span style="font-size:0.75rem;color:#64748b;">(Bölüm {src['chunk_index'] + 1})</span></span>
-                                    <span class="source-score">%{src['relevance']} Alaka Düzeyi</span>
+                                    <span class="source-name">
+                                        <span class="citation-pill">[{src['citation_index']}]</span>
+                                        📄 {src['source_file']} <span style="font-size:0.75rem;color:#64748b;">(Bölüm {src['chunk_index'] + 1})</span>
+                                    </span>
+                                    <span class="source-score">%{src['relevance']} Alaka ({src['match_type'].upper()})</span>
                                 </div>
+                                <div class="source-preview">{src.get('content', '')[:160]}...</div>
                             </div>""",
                             unsafe_allow_html=True
                         )
 
             st.markdown(
                 f"""<div class="telemetry-pill">
-                    ⏱️ Arama: <b>{search_time}s</b> &nbsp;•&nbsp; ⚡ Çıkarım: <b>{gen_time}s</b>
+                    ⏱️ Hibrit Arama: <b>{search_time}s</b> &nbsp;•&nbsp; ⚡ Çıkarım: <b>{gen_time}s</b>
                 </div>""",
                 unsafe_allow_html=True
             )
 
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": full_answer,
-            "sources": sources_data,
-            "search_time": search_time,
-            "gen_time": gen_time,
-        })
+        # Asistan yanıtını veritabanına kaydet
+        engine.db.save_message(
+            session_id=st.session_state.current_session_id,
+            role="assistant",
+            content=full_answer,
+            sources=sources_data,
+            search_time=search_time,
+            gen_time=gen_time
+        )
         st.rerun()
 
 

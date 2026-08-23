@@ -176,12 +176,12 @@ def handle_query(engine: RAGEngine, question: str) -> None:
     gen_time = round(time.time() - t_gen_start, 2)
     print("\n")
 
-    print(f"⏱️  Arama: {search_time}s | ⚡ Yanıt: {gen_time}s")
+    print(f"⏱️  Hibrit Arama: {search_time}s | ⚡ Çıkarım: {gen_time}s")
 
     if sources:
-        print("\n📚 Kaynaklar ve Alaka Düzeyleri:")
+        print("\n📚 Doğrulanan Kaynaklar ve Alaka Düzeyleri:")
         for src in sources:
-            print(f"   • {src.source_file}, Bölüm {src.chunk_index + 1} (Alaka: %{src.relevance_percentage})")
+            print(f"   • [{src.citation_index}] {src.source_file}, Bölüm {src.chunk_index + 1} (Alaka: %{src.relevance_percentage} | Eşleşme: {src.match_type.upper()})")
     print()
 
 

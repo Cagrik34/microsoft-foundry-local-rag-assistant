@@ -30,21 +30,45 @@ class DocumentInfo:
 
 @dataclass
 class SearchResult:
-    """Vektör arama sonucunu temsil eder."""
+    """Hibrit arama sonucunu temsil eder."""
     content: str
     source_file: str
     chunk_index: int
     similarity: float
+    citation_index: int = 1
+    match_type: str = "hybrid"  # "vector", "bm25", "hybrid"
 
     @property
     def relevance_percentage(self) -> int:
-        """Ham kosinüs benzerliğini (0.05 - 0.40 aralığı) sezgisel %50 - %99 anlamsal alaka düzeyine kalibre eder."""
+        """Ham kosinüs/RRF skorunu sezgisel %50 - %99 anlamsal alaka düzeyine kalibre eder."""
         if self.similarity <= 0.0:
             return 0
         if self.similarity >= 0.9:
             return 100
         score = 50 + ((self.similarity - 0.05) / 0.35) * 48
         return max(10, min(99, int(round(score))))
+
+
+@dataclass
+class ChatMessage:
+    """Kayıtlı sohbet mesajını temsil eder."""
+    id: int
+    session_id: str
+    role: str
+    content: str
+    sources_json: str = ""
+    search_time: float = 0.0
+    gen_time: float = 0.0
+    created_at: str = ""
+
+
+@dataclass
+class ChatSession:
+    """Kayıtlı sohbet oturumunu temsil eder."""
+    session_id: str
+    title: str
+    created_at: str = ""
+    updated_at: str = ""
 
 
 @dataclass

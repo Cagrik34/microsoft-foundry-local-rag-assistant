@@ -1,10 +1,12 @@
 """
 Belge İşleme ve Metin Çıkarma Modülü (src/core/document_loader.py)
 ===================================================================
-PDF, DOCX, XLSX, PPTX, TXT ve MD dosyalarından metin ayıklar ve öbekler (chunking).
+PDF, DOCX, XLSX, PPTX, TXT ve MD dosyalarından yapı duyarlı (structure-aware) metin ayıklar ve öbekler.
+Excel tablolarını Markdown tablo formatına dönüştürerek satır/sütun ilişkisini korur.
 """
 
 import os
+import re
 from typing import List
 from src.config import DOCUMENTS_DIR, SUPPORTED_EXTENSIONS, CHUNK_SIZE, CHUNK_OVERLAP, MIN_CHUNK_LENGTH
 from src.core.models import TextChunk, DocumentInfo
@@ -47,32 +49,63 @@ def scan_documents(directory: str = DOCUMENTS_DIR) -> List[str]:
 
 
 def _extract_pdf(file_path: str) -> str:
-    """PDF dosyasından metin çıkarır."""
+    """PDF dosyasından sayfa sayfa metin çıkarır."""
     if pypdf is None:
         print("⚠️  PDF okunamadı: pypdf kütüphanesi yüklü değil.")
         return ""
     try:
         reader = pypdf.PdfReader(file_path)
-        text_parts = [page.extract_text().strip() for page in reader.pages if page.extract_text()]
-        return "\n\n".join(text_parts)
+        parts = []
+        for i, page in enumerate(reader.pages):
+            text = page.extract_text()
+            if text and text.strip():
+                parts.append(f"=== Sayfa {i+1} ===\n{text.strip()}")
+        return "\n\n".join(parts)
     except Exception as e:
         print(f"⚠️  PDF okuma hatası ({file_path}): {e}")
         return ""
 
 
 def _extract_docx(file_path: str) -> str:
-    """Word (.docx) dosyasından metin ve tablo verilerini çıkarır."""
+    """Word (.docx) dosyasından başlık hiyerarşisi ve tabloları Markdown formatında çıkarır."""
     if docx is None:
         print("⚠️  DOCX okunamadı: python-docx kütüphanesi yüklü değil.")
         return ""
     try:
         doc = docx.Document(file_path)
-        parts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+        parts = []
+        for elem in doc.paragraphs:
+            txt = elem.text.strip()
+            if not txt:
+                continue
+            if elem.style.name.startswith("Heading 1"):
+                parts.append(f"\n# {txt}\n")
+            elif elem.style.name.startswith("Heading 2"):
+                parts.append(f"\n## {txt}\n")
+            elif elem.style.name.startswith("Heading 3"):
+                parts.append(f"\n### {txt}\n")
+            else:
+                parts.append(txt)
+
+        # Tabloları Markdown formatına dönüştür
         for table in doc.tables:
+            table_rows = []
             for row in table.rows:
-                cells = [c.text.strip() for c in row.cells if c.text.strip()]
-                if cells:
-                    parts.append(" | ".join(cells))
+                cells = [c.text.strip().replace("\n", " ") for c in row.cells]
+                table_rows.append(cells)
+
+            if table_rows:
+                header = table_rows[0]
+                md_table = [
+                    "| " + " | ".join(header) + " |",
+                    "| " + " | ".join(["---"] * len(header)) + " |"
+                ]
+                for r in table_rows[1:]:
+                    # Sütun sayısını eşitle
+                    padded = r + [""] * (len(header) - len(r))
+                    md_table.append("| " + " | ".join(padded[:len(header)]) + " |")
+                parts.append("\n" + "\n".join(md_table) + "\n")
+
         return "\n\n".join(parts)
     except Exception as e:
         print(f"⚠️  DOCX okuma hatası ({file_path}): {e}")
@@ -80,21 +113,43 @@ def _extract_docx(file_path: str) -> str:
 
 
 def _extract_xlsx(file_path: str) -> str:
-    """Excel (.xlsx) dosyasındaki tüm sayfaları ve satırları okur."""
+    """Excel (.xlsx) sayfalarını Markdown Tablo formatına dönüştürerek sütun/satır ilişkisini korur."""
     if openpyxl is None:
         print("⚠️  XLSX okunamadı: openpyxl kütüphanesi yüklü değil.")
         return ""
     try:
         wb = openpyxl.load_workbook(file_path, data_only=True, read_only=True)
-        parts = []
+        sheet_parts = []
         for name in wb.sheetnames:
-            parts.append(f"=== Sayfa: {name} ===")
-            for row in wb[name].iter_rows(values_only=True):
-                vals = [str(v).strip() for v in row if v is not None]
-                if vals:
-                    parts.append(" | ".join(vals))
+            rows = list(wb[name].iter_rows(values_only=True))
+            if not rows:
+                continue
+
+            # Boş satırları filtrele
+            valid_rows = []
+            for r in rows:
+                cleaned = [str(v).strip() if v is not None else "" for v in r]
+                if any(cleaned):
+                    valid_rows.append(cleaned)
+
+            if not valid_rows:
+                continue
+
+            header = valid_rows[0]
+            col_count = len(header)
+            md_lines = [
+                f"\n=== Sayfa: {name} ===\n",
+                "| " + " | ".join(header) + " |",
+                "| " + " | ".join(["---"] * col_count) + " |"
+            ]
+            for r in valid_rows[1:]:
+                padded = r + [""] * (col_count - len(r))
+                md_lines.append("| " + " | ".join(padded[:col_count]) + " |")
+
+            sheet_parts.append("\n".join(md_lines))
+
         wb.close()
-        return "\n".join(parts)
+        return "\n\n".join(sheet_parts)
     except Exception as e:
         print(f"⚠️  XLSX okuma hatası ({file_path}): {e}")
         return ""
@@ -152,36 +207,62 @@ def read_document(file_path: str) -> DocumentInfo:
 
 
 def chunk_text(text: str) -> List[str]:
-    """Metni kayan pencere (sliding window) algoritmasıyla küçük öbeklere böler."""
+    """Yapı ve başlık duyarlı semantik öbekleme algoritması."""
     if not text or not text.strip():
         return []
 
-    paragraphs = [p.strip() for p in text.strip().split("\n\n") if p.strip()]
+    # Bölüm ve başlık sınırlarına göre böl
+    sections = [s.strip() for s in re.split(r'\n(?=== |#+ )', text) if s.strip()]
     chunks: List[str] = []
     current = ""
 
-    for p in paragraphs:
-        if len(p) > CHUNK_SIZE:
+    for sec in sections:
+        if len(sec) > CHUNK_SIZE:
             if current:
                 chunks.append(current)
                 current = ""
-            start = 0
-            while start < len(p):
-                end = start + CHUNK_SIZE
-                split = p.rfind(" ", start, end) if end < len(p) else len(p)
-                if split <= start:
-                    split = end
-                chunks.append(p[start:split])
-                start = max(0, split - CHUNK_OVERLAP) if split < len(p) else len(p)
+
+            paragraphs = [p.strip() for p in sec.split("\n\n") if p.strip()]
+            p_current = ""
+            for p in paragraphs:
+                if len(p) > CHUNK_SIZE:
+                    if p_current:
+                        chunks.append(p_current)
+                        p_current = ""
+                    # Cümle bazlı kayan pencere
+                    start = 0
+                    while start < len(p):
+                        end = start + CHUNK_SIZE
+                        split = p.rfind(". ", start, end) if end < len(p) else len(p)
+                        if split <= start:
+                            split = p.rfind(" ", start, end) if end < len(p) else len(p)
+                        if split <= start:
+                            split = end
+                        else:
+                            split += 1  # Noktayı dahil et
+                        chunks.append(p[start:split].strip())
+                        start = max(0, split - CHUNK_OVERLAP) if split < len(p) else len(p)
+                    continue
+
+                test_p = f"{p_current}\n\n{p}" if p_current else p
+                if len(test_p) <= CHUNK_SIZE:
+                    p_current = test_p
+                else:
+                    if p_current:
+                        chunks.append(p_current)
+                    p_current = p
+
+            if p_current:
+                chunks.append(p_current)
             continue
 
-        test = f"{current}\n\n{p}" if current else p
-        if len(test) <= CHUNK_SIZE:
-            current = test
+        test_sec = f"{current}\n\n{sec}" if current else sec
+        if len(test_sec) <= CHUNK_SIZE:
+            current = test_sec
         else:
             if current:
                 chunks.append(current)
-            current = p
+            current = sec
 
     if current:
         chunks.append(current)
@@ -211,7 +292,7 @@ def process_all_documents(directory: str = DOCUMENTS_DIR) -> List[DocumentInfo]:
         try:
             d = process_document(p)
             docs.append(d)
-            print(f"  ✅ {d.file_name} → {len(d.chunks)} chunk")
+            print(f"  ✅ {d.file_name} → {len(d.chunks)} öbek")
         except Exception as e:
             print(f"  ❌ {os.path.basename(p)} → Hata: {e}")
     return docs
