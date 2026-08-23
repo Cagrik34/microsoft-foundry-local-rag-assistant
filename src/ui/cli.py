@@ -11,10 +11,10 @@ import time
 import subprocess
 
 # Windows konsolunda UTF-8 desteği (emoji çökme koruması)
-if sys.stdout and hasattr(sys.stdout, "buffer"):
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
 

@@ -25,10 +25,10 @@ elif os.path.isdir(venv_unix) and venv_unix not in sys.path:
     sys.path.insert(0, venv_unix)
 
 # Windows terminal UTF-8 encoding ayarı
-if sys.stdout and hasattr(sys.stdout, "encoding") and sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
 
