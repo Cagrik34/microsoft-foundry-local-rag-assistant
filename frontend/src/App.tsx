@@ -371,7 +371,7 @@ export const App: React.FC = () => {
             </div>
             <div className="flex items-center gap-1.5 text-[11px] font-medium text-indigo-300 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
               <Cpu className="w-3 h-3 text-indigo-400" />
-              <span>phi-3.5-mini</span>
+              <span>phi-4-mini</span>
             </div>
           </div>
         </header>

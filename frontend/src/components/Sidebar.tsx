@@ -274,7 +274,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="text-[10px] text-slate-500 space-y-0.5 px-1">
           <div className="flex items-center justify-between">
             <span>🧠 Model:</span>
-            <b className="text-slate-400">phi-3.5-mini</b>
+            <b className="text-slate-400">phi-4-mini</b>
           </div>
           <div className="flex items-center justify-between">
             <span>📐 Vektör:</span>
