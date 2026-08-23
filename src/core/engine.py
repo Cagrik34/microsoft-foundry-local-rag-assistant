@@ -105,16 +105,11 @@ class RAGEngine:
         is_english = any(w in re.findall(r'\b\w+\b', question.lower()) for w in ["what", "how", "why", "explain", "where", "the"])
         sys_prompt = SYSTEM_PROMPT_EN.format(context=context) if is_english else SYSTEM_PROMPT.format(context=context)
 
-        messages = [{"role": "system", "content": sys_prompt}]
-
-        # Çok turlu hafıza desteği (Yalnızca önceki konuşma turları)
-        if chat_history:
-            prior_turns = [t for t in chat_history if t.get("role") in ("user", "assistant") and t.get("content") and t.get("content") != question]
-            for turn in prior_turns[-4:]:
-                messages.append({"role": turn["role"], "content": turn["content"]})
-
-        # Mevcut soru
-        messages.append({"role": "user", "content": question})
+        # RAG odaklı temiz bağlam yapısı (Prompt şişmesini ve gRPC iptalini kesin olarak önler)
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": question}
+        ]
 
         full_text = self.models.chat_complete(messages)
         full_text = self._clean_thinking_tags(full_text)

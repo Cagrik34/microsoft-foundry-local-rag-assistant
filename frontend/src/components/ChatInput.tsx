@@ -17,39 +17,65 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled })
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'tr-TR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'tr-TR';
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
-        setIsListening(false);
-      };
+        recognition.onresult = (event: any) => {
+          let fullTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            fullTranscript += event.results[i][0].transcript;
+          }
+          if (fullTranscript.trim()) {
+            setInput(fullTranscript);
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+              textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+            }
+          }
+        };
 
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
+        recognition.onerror = (event: any) => {
+          console.warn('Speech recognition warning:', event.error);
+          if (event.error === 'not-allowed') {
+            alert('Mikrofon erişim izni verilmedi. Lütfen tarayıcı ayarlarından mikrofon iznini etkinleştirin.');
+          } else if (event.error === 'service-not-allowed' || event.error === 'network') {
+            alert('Brave veya tarayıcınız Web Speech servisine izin vermiyor. Brave kullanıyorsanız "Ayarlar > Gizlilik ve Güvenlik > Ses tanıma için Google servislerini kullan" seçeneğini açabilir veya Edge/Chrome kullanabilirsiniz.');
+          }
+          setIsListening(false);
+        };
 
-      recognitionRef.current = recognition;
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+      } catch (err) {
+        console.error('Speech recognition init error:', err);
+      }
     }
   }, []);
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
-      alert('Tarayıcınız ses tanıma (Web Speech API) desteği sunmuyor. Lütfen Edge veya Chrome kullanın.');
+      alert('Tarayıcınızda Web Speech API desteği bulunamadı. Lütfen Google Chrome veya Microsoft Edge kullanın.');
       return;
     }
 
     if (isListening) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
       setIsListening(false);
     } else {
       try {
+        setInput('');
         recognitionRef.current.start();
         setIsListening(true);
       } catch (err) {
-        console.error('Speech recognition error:', err);
+        console.warn('Speech start warning:', err);
         setIsListening(false);
       }
     }

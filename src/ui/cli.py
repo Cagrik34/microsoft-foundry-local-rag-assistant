@@ -103,11 +103,14 @@ def launch_web_ui(model_manager: Optional[ModelManager] = None) -> None:
     print("💡 Durdurmak için Ctrl+C tuşlarına basın.\n")
 
     def open_browser():
-        time.sleep(1.2)
-        try:
-            webbrowser.open("http://localhost:8000")
-        except Exception:
-            pass
+        import urllib.request
+        for _ in range(60):
+            try:
+                urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=1)
+                webbrowser.open("http://localhost:8000")
+                break
+            except Exception:
+                time.sleep(0.3)
 
     threading.Thread(target=open_browser, daemon=True).start()
 
