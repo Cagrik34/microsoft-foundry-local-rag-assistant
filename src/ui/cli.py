@@ -40,13 +40,13 @@ RESET = "\033[0m"
 
 MODE_BANNER = f"""
 {CYAN}=============================================================
-  {MAGENTA}⚡ ZENITH AI{CYAN} — Yerel RAG Akıllı Asistanı
-  {DIM}🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI{RESET}
+  {MAGENTA}⚡ ZENITH AI{CYAN} — Kurumsal Yerel RAG Asistanı
+  {DIM}🔒 Tamamen Çevrimdışı • Microsoft Foundry Local • 0 TL{RESET}
 {CYAN}-------------------------------------------------------------
   {BOLD}🚀 Çalıştırma Modunu Seçin:{RESET}
 
    {GREEN}[1]{RESET} {BOLD}💻 Terminal (CLI) Modu{RESET}
-   {GREEN}[2]{RESET} {BOLD}🌐 Web Arayüzü{RESET} {DIM}(Streamlit — Tarayıcıda Açılır){RESET}
+   {GREEN}[2]{RESET} {BOLD}🌐 Web Uygulaması{RESET} {DIM}(React + FastAPI — Tarayıcıda Açılır){RESET}
 {CYAN}============================================================={RESET}
 """
 
@@ -56,7 +56,7 @@ BANNER = f"""
   {DIM}🔒 Tamamen Çevrimdışı • Yerel RAG Yapay Zeka Motoru{RESET}
 {CYAN}-------------------------------------------------------------
   {BOLD}📌 Kullanılabilir Komutlar:{RESET}
-    {GREEN}/web{RESET}       — Streamlit Web Arayüzünü Başlat
+    {GREEN}/web{RESET}       — React + FastAPI Web Uygulamasını Başlat
     {GREEN}/indeksle{RESET}  — Belgeleri işle ve veritabanına kaydet
     {GREEN}/durum{RESET}     — Veritabanı durumunu ve istatistikleri göster
     {GREEN}/temizle{RESET}   — Veritabanı indeksini sıfırla
@@ -75,7 +75,7 @@ HELP_TEXT = f"""
 3. Sorularınızı doğrudan yazın
 
 Komutlar:
-  {GREEN}/web{RESET}       — Streamlit Web Arayüzünü (tarayıcıda) başlatır.
+  {GREEN}/web{RESET}       — React + FastAPI Web Uygulamasını (tarayıcıda) başlatır.
   {GREEN}/indeksle{RESET}  — documents/ dizinindeki belgeleri okur, öbekler ve kaydeder.
   {GREEN}/durum{RESET}     — Veritabanındaki dosya ve öbek sayısını gösterir.
   {GREEN}/temizle{RESET}   — Tüm indekslenmiş verileri siler.
@@ -85,28 +85,40 @@ Komutlar:
 
 
 def launch_web_ui(model_manager: Optional[ModelManager] = None) -> None:
-    """Streamlit web arayüzünü ayrı bir süreçte başlatır ve tarayıcıda açar.
+    """React + FastAPI web uygulamasını başlatır ve tarayıcıda açar.
     Bellek çakışmasını önlemek için CLI modelleri önce serbest bırakılır.
     """
+    import webbrowser
+    import threading
+
     if model_manager is not None:
         try:
-            print("🔌 Web arayüzü için CLI modelleri geçici olarak bellekten kaldırılıyor...")
+            print("🔌 Web uygulaması için CLI modelleri serbest bırakılıyor...")
             model_manager.shutdown()
         except Exception:
             pass
 
-    print("\n🌐 Web arayüzü başlatılıyor...")
-    web_script = os.path.join(BASE_DIR, "src", "ui", "web.py")
+    print("\n🌐 React + FastAPI Web Uygulaması Başlatılıyor...")
+    print(f"🚀 Adres: http://localhost:8000")
+    print("💡 Durdurmak için Ctrl+C tuşlarına basın.\n")
+
+    def open_browser():
+        time.sleep(1.2)
+        try:
+            webbrowser.open("http://localhost:8000")
+        except Exception:
+            pass
+
+    threading.Thread(target=open_browser, daemon=True).start()
+
     try:
-        cmd = [sys.executable, "-m", "streamlit", "run", web_script]
-        print(f"🚀 Komut çalıştırılıyor: streamlit run src/ui/web.py")
-        print("💡 Durdurmak için Ctrl+C tuşlarına basın.\n")
-        subprocess.run(cmd, check=True)
+        import uvicorn
+        from src.api.server import app
+        uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
     except KeyboardInterrupt:
-        print("\n🛑 Web arayüzü kapatıldı.\n")
+        print("\n🛑 Web uygulaması kapatıldı.\n")
     except Exception as e:
-        print(f"\n❌ Web arayüzü başlatılamadı: {e}")
-        print("Lütfen 'pip install streamlit' komutunu çalıştırdığınızdan emin olun.\n")
+        print(f"\n❌ Web uygulaması başlatılamadı: {e}\n")
     finally:
         if model_manager is not None:
             try:
