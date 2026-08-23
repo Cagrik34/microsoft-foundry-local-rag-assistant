@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { ArrowUp, Mic, MicOff } from 'lucide-react';
 
 interface ChatInputProps {
@@ -9,75 +9,104 @@ interface ChatInputProps {
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled }) => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [speechNotice, setSpeechNotice] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionInstanceRef = useRef<any>(null);
 
-  useEffect(() => {
+  const startListening = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-    if (SpeechRecognition) {
-      try {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'tr-TR';
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        recognition.onresult = (event: any) => {
-          let fullTranscript = '';
-          for (let i = 0; i < event.results.length; i++) {
-            fullTranscript += event.results[i][0].transcript;
-          }
-          if (fullTranscript.trim()) {
-            setInput(fullTranscript);
-            if (textareaRef.current) {
-              textareaRef.current.style.height = 'auto';
-              textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
-            }
-          }
-        };
-
-        recognition.onerror = (event: any) => {
-          console.warn('Speech recognition warning:', event.error);
-          if (event.error === 'not-allowed') {
-            alert('Mikrofon erişim izni verilmedi. Lütfen tarayıcı ayarlarından mikrofon iznini etkinleştirin.');
-          } else if (event.error === 'service-not-allowed' || event.error === 'network') {
-            alert('Brave veya tarayıcınız Web Speech servisine izin vermiyor. Brave kullanıyorsanız "Ayarlar > Gizlilik ve Güvenlik > Ses tanıma için Google servislerini kullan" seçeneğini açabilir veya Edge/Chrome kullanabilirsiniz.');
-          }
-          setIsListening(false);
-        };
-
-        recognition.onend = () => {
-          setIsListening(false);
-        };
-
-        recognitionRef.current = recognition;
-      } catch (err) {
-        console.error('Speech recognition init error:', err);
-      }
-    }
-  }, []);
-
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      alert('Tarayıcınızda Web Speech API desteği bulunamadı. Lütfen Google Chrome veya Microsoft Edge kullanın.');
+    if (!SpeechRecognition) {
+      setSpeechNotice(
+        'Tarayıcınız Web Speech API ses tanıma özelliğini desteklemiyor. Lütfen Google Chrome veya Microsoft Edge kullanın.'
+      );
       return;
     }
 
-    if (isListening) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {}
-      setIsListening(false);
-    } else {
-      try {
-        setInput('');
-        recognitionRef.current.start();
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'tr-TR';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      let previousText = input ? input + ' ' : '';
+
+      recognition.onstart = () => {
         setIsListening(true);
-      } catch (err) {
-        console.warn('Speech start warning:', err);
+        setSpeechNotice(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const currentText = previousText + finalTranscript + interimTranscript;
+        setInput(currentText);
+
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = `${Math.min(
+            textareaRef.current.scrollHeight,
+            160
+          )}px`;
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition event error:', event.error);
         setIsListening(false);
-      }
+
+        if (event.error === 'not-allowed') {
+          setSpeechNotice(
+            'Mikrofon izni verilmedi. Lütfen adres çubuğundaki kilit simgesine tıklayıp mikrofon iznini verin.'
+          );
+        } else if (
+          event.error === 'service-not-allowed' ||
+          event.error === 'network'
+        ) {
+          setSpeechNotice(
+            'Brave tarayıcısı kullanıyorsanız: brave://settings/privacy sayfasına gidip "Ses tanıma için Google servislerini kullan" seçeneğini aktif edin veya Microsoft Edge / Chrome kullanın.'
+          );
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionInstanceRef.current = recognition;
+      recognition.start();
+    } catch (err: any) {
+      console.error('Speech recognition start error:', err);
+      setIsListening(false);
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionInstanceRef.current) {
+      try {
+        recognitionInstanceRef.current.stop();
+      } catch (e) {}
+    }
+    setIsListening(false);
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
     }
   };
 
@@ -109,6 +138,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled })
 
   return (
     <div className="relative max-w-4xl mx-auto w-full px-4">
+      {speechNotice && (
+        <div className="mb-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between gap-2 shadow-lg backdrop-blur-md animate-in fade-in slide-in-from-bottom-2">
+          <span>⚠️ {speechNotice}</span>
+          <button
+            onClick={() => setSpeechNotice(null)}
+            className="text-amber-400 hover:text-white text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20"
+          >
+            Tamam
+          </button>
+        </div>
+      )}
+
       <div className="relative flex items-end bg-slate-900/90 border border-white/10 focus-within:border-indigo-500/50 rounded-2xl p-2 shadow-2xl backdrop-blur-xl transition-all duration-200">
         {/* Microphone Button */}
         <button
