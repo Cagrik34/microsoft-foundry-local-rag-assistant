@@ -17,4 +17,6 @@ data/*.db
 !.vscode/settings.json
 .idea/
 .DS_Store
-Thumbs.db
+# Geçici Test ve Çalışma Dosyaları
+scratch/
+test_*.py
