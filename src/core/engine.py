@@ -53,8 +53,74 @@ class RAGEngine:
         print(f"\n💾 Toplam {total} chunk veritabanına kaydedildi.")
         return {"total_files": len(file_results), "total_chunks": total, "files": file_results}
 
+    def query_search(self, question: str, top_k: int = TOP_K) -> Tuple[List[SearchResult], str, float]:
+        """Kullanıcı sorusunu alır, vektör araması yapar ve (sources, context, search_time) döner.
+        LLM çıkarımı yapmaz; sadece arama fazını çalıştırır.
+        """
+        if not self.models.is_embedding_ready:
+            self.models.load_embedding_model()
+
+        if self._is_summary_query(question):
+            t_search_start = time.time()
+            files = self.db.get_indexed_files()
+            search_time = round(time.time() - t_search_start, 2)
+            return [], "[SUMMARY]", search_time
+
+        t_search_start = time.time()
+        q_emb = self.models.generate_embedding(question)
+        results = self.db.search(q_emb, top_k=top_k)
+        search_time = round(time.time() - t_search_start, 2)
+
+        if not results:
+            return [], "", search_time
+
+        context = self._format_context(results)
+        context = self._truncate_context(context, MAX_CONTEXT_CHARS)
+        return results, context, search_time
+
+    def query_generate(self, question: str, sources: List[SearchResult], context: str) -> Iterator[str]:
+        """Arama sonuçları ve bağlam ile LLM yanıtı üretir ve kelime kelime akış döner.
+        Özet sorguları için özel akış döner.
+        """
+        if not self.models.is_chat_ready:
+            self.models.load_chat_model()
+
+        if context == "[SUMMARY]":
+            res = self._summarize_per_file()
+            def text_gen():
+                words = res.answer.split(" ")
+                for i, w in enumerate(words):
+                    yield w + (" " if i < len(words) - 1 else "")
+                    time.sleep(0.008)
+            return text_gen()
+
+        if not sources:
+            def empty_gen():
+                yield "Veritabanında ilgili belge bulunamadı."
+            return empty_gen()
+
+        is_english = any(w in re.findall(r'\b\w+\b', question.lower()) for w in ["what", "how", "why", "explain", "where", "the"])
+        sys_prompt = SYSTEM_PROMPT_EN.format(context=context) if is_english else SYSTEM_PROMPT.format(context=context)
+
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": question},
+        ]
+        full_text = self.models.chat_complete(messages)
+        full_text = self._clean_thinking_tags(full_text)
+
+        def word_stream():
+            words = full_text.split(" ")
+            for i, w in enumerate(words):
+                yield w + (" " if i < len(words) - 1 else "")
+                time.sleep(0.003)
+
+        return word_stream()
+
     def query_stream(self, question: str, top_k: int = TOP_K) -> Tuple[Iterator[str], List[SearchResult], str, float]:
-        """Kullanıcı sorusunu alır, arama yapar ve (stream_generator, sources, context, search_time) döner."""
+        """Kullanıcı sorusunu alır, arama yapar ve (stream_generator, sources, context, search_time) döner.
+        CLI uyumluluğu için korunmuştur; web.py query_search + query_generate kullanır.
+        """
         if not self.models.is_embedding_ready:
             self.models.load_embedding_model()
         if not self.models.is_chat_ready:

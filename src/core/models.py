@@ -122,7 +122,9 @@ class ModelManager:
             return [item.embedding for item in self._embedding_client.generate_embeddings(texts).data]
 
     def chat_complete(self, messages: List[dict]) -> str:
-        """Dil modeline istem gönderir ve yanıt üretir (Stateless & Thread Pool İzoleli)."""
+        """Dil modeline istem gönderir ve yanıt üretir (Stateless & Thread Pool İzoleli).
+        İlk deneme başarısız olursa taze gRPC istemcisi oluşturarak tekrar dener.
+        """
         if not self._chat_model:
             raise RuntimeError("Chat modeli yüklenmedi.")
         self._ensure_executor()
@@ -133,12 +135,22 @@ class ModelManager:
             client.settings.presence_penalty = 0.1
 
             future = self._executor.submit(client.complete_chat, messages)
-            res = future.result(timeout=600)
+            res = future.result(timeout=120)
             return res.choices[0].message.content
         except Exception as e:
+            # İlk deneme başarısız: bozuk gRPC kanalını atıp taze istemci oluştur
             try:
-                client = self._chat_client or self._chat_model.get_chat_client()
-                return client.complete_chat(messages).choices[0].message.content
+                print(f"\n⚠️  İlk chat denemesi başarısız ({type(e).__name__}), taze istemci ile yeniden deneniyor...", file=sys.stderr)
+                fresh_client = self._chat_model.get_chat_client()
+                fresh_client.settings.max_tokens = MAX_TOKENS
+                fresh_client.settings.temperature = 0.3
+                fresh_client.settings.presence_penalty = 0.1
+                self._chat_client = fresh_client  # Taze istemciyi kalıcı yap
+
+                self._ensure_executor()
+                future = self._executor.submit(fresh_client.complete_chat, messages)
+                res = future.result(timeout=120)
+                return res.choices[0].message.content
             except Exception as e2:
                 print(f"\n⚠️  Chat completion hatası: {e2}", file=sys.stderr)
                 return f"Yanıt üretilemedi: {e2}"

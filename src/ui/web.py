@@ -754,8 +754,8 @@ def main() -> None:
 
         with st.chat_message("assistant", avatar="⚡"):
             t_gen_start = time.time()
-            with st.spinner("⚡ Zenith AI belgeleri analiz ediyor ve yanıt hazırlıyor..."):
-                stream_gen, sources, context, search_time = engine.query_stream(prompt)
+            with st.spinner("🔍 Belgeler aranıyor..."):
+                sources, context, search_time = engine.query_search(prompt)
 
             try:
                 print(f"📎 [Web UI] {len(sources)} kaynak bulundu (Arama: {search_time}s)")
@@ -763,6 +763,9 @@ def main() -> None:
                 pass
 
             answer_placeholder = st.empty()
+            answer_placeholder.markdown("⚡ Yanıt üretiliyor... ▌")
+            stream_gen = engine.query_generate(prompt, sources, context)
+
             full_answer = ""
             for chunk in stream_gen:
                 full_answer += chunk

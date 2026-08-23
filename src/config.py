@@ -33,7 +33,7 @@ TOP_K = 3               # Aramada getirilecek en yüksek puanlı öbek sayısı
 SIMILARITY_THRESHOLD = 0.05  # Minimum kosinüs benzerlik eşiği
 MAX_CHUNKS_PER_FILE = 3      # Aynı dosyadan seçilebilecek maksimum öbek sayısı
 MAX_CONTEXT_CHARS = 1000     # Bağlam penceresi karakter sınırı (CPU hız/kapsam dengesi)
-MAX_TOKENS = 150             # LLM yanıt üretim limiti (token)
+MAX_TOKENS = 256             # LLM yanıt üretim limiti (token)
 
 # ── Sistem Komutları (System Prompts) ──
 SYSTEM_PROMPT = """You are a precise document assistant. Answer ONLY in Turkish.
