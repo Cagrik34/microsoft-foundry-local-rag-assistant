@@ -22,30 +22,30 @@
 ## 🏛️ Sistem Mimarisi
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│               ÖN YÜZ: React 18 + Vite + TypeScript + Tailwind CSS                      │
-│    (ChatGPT/Perplexity Standardı Koyu UI, Canlı SSE Akış, STT Mikrofon, TTS, Alıntılar)│
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │ HTTP / Server-Sent Events (SSE)
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                         ARKA YÜZ: FastAPI + Uvicorn                                    │
-│             (Asenkron REST API, Çoklu Oturum Yönetimi, Sıfır Kilitlenme)               │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        RAG MOTORU: Hibrit Arama & SQLite FTS5                          │
-│            (Yoğun Vektörler + SQLite FTS5 BM25 + Reciprocal Rank Fusion RRF)           │
-└───────────────────────┬────────────────────────────────────────┬───────────────────────┘
-                        │ (Vektör & Metin Arama)                 │ (Yerel Çıkarım)
-                        ▼                                        ▼
-    ┌───────────────────────────────────────┐   ┌────────────────────────────────────────┐
-    │    SQLite Yerel Depo & FTS5 İndeksi   │   │      Microsoft Foundry Local SDK       │
-    │  - documents (1024-d L2 Vektörler)    │   │  - qwen3-embedding-0.6b (1024-d)       │
-    │  - documents_fts (unicode61 BM25)     │   │  - phi-4-mini (3.8B Instruct)          │
-    │  - chat_sessions & chat_messages      │   └────────────────────────────────────────┘
-    └───────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                    ÖN YÜZ: React 18 + Vite + TypeScript + Tailwind CSS                     │
+│    (ChatGPT/Perplexity Standardı Koyu UI, Canlı SSE Akış, STT Mikrofon, TTS, Alıntılar)    │
+└────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                             │ HTTP / Server-Sent Events (SSE)
+                                             ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                ARKA YÜZ: FastAPI + Uvicorn                                 │
+│                (Asenkron REST API, Çoklu Oturum Yönetimi, Sıfır Kilitlenme)                │
+└────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                           RAG MOTORU: Hibrit Arama & SQLite FTS5                           │
+│             (Yoğun Vektörler + SQLite FTS5 BM25 + Reciprocal Rank Fusion RRF)              │
+└──────────────────────────┬───────────────────────────────────────────┬─────────────────────┘
+                           │ (Vektör & Metin Arama)                    │ (Yerel Çıkarım)
+                           ▼                                           ▼
+       ┌───────────────────────────────────────┐      ┌────────────────────────────────────────┐
+       │    SQLite Yerel Depo & FTS5 İndeksi   │      │      Microsoft Foundry Local SDK       │
+       │  - documents (1024-d L2 Vektörler)    │      │  - qwen3-embedding-0.6b (1024-d)       │
+       │  - documents_fts (unicode61 BM25)     │      │  - phi-4-mini (3.8B Instruct)          │
+       │  - chat_sessions & chat_messages      │      └────────────────────────────────────────┘
+       └───────────────────────────────────────┘
 ```
 
 ---

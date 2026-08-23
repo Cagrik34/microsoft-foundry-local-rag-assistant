@@ -24,30 +24,30 @@ Powered by the **Microsoft Foundry Local SDK**, Zenith AI runs local Large Langu
 ## 🏛️ System Architecture
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│               FRONTEND: React 18 + Vite + TypeScript + Tailwind CSS                    │
-│    (ChatGPT/Perplexity-grade Dark UI, Real-time SSE Token Stream, STT Mic, TTS, Citations) │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │ HTTP / Server-Sent Events (SSE)
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                         BACKEND: FastAPI + Uvicorn                                     │
-│            (Asynchronous REST API, Multi-Session Management, Zero IPC Deadlock)         │
-└───────────────────────────────────────────┬────────────────────────────────────────────┘
-                                            │
-                                            ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        RAG ENGINE: Hybrid Search & SQLite FTS5                         │
-│            (Dense Vectors + SQLite FTS5 BM25 + Reciprocal Rank Fusion RRF)             │
-└───────────────────────┬────────────────────────────────────────┬───────────────────────┘
-                        │ (Vector & Text Retrieval)              │ (On-Device Inference)
-                        ▼                                        ▼
-    ┌───────────────────────────────────────┐   ┌────────────────────────────────────────┐
-    │    SQLite Local Store & FTS5 Index    │   │      Microsoft Foundry Local SDK       │
-    │  - documents (1024-d L2 Vectors)      │   │  - qwen3-embedding-0.6b (1024-d)       │
-    │  - documents_fts (unicode61 BM25)     │   │  - phi-4-mini (3.8B Instruct)          │
-    │  - chat_sessions & chat_messages      │   └────────────────────────────────────────┘
-    └───────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                   FRONTEND: React 18 + Vite + TypeScript + Tailwind CSS                    │
+│  (ChatGPT/Perplexity-grade Dark UI, Real-time SSE Token Stream, STT Mic, TTS, Citations)   │
+└────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                             │ HTTP / Server-Sent Events (SSE)
+                                             ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 BACKEND: FastAPI + Uvicorn                                 │
+│            (Asynchronous REST API, Multi-Session Management, Zero IPC Deadlock)            │
+└────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                             │
+                                             ▼
+┌────────────────────────────────────────────────────────────────────────────────────────────┐
+│                          RAG ENGINE: Hybrid Search & SQLite FTS5                           │
+│              (Dense Vectors + SQLite FTS5 BM25 + Reciprocal Rank Fusion RRF)               │
+└──────────────────────────┬───────────────────────────────────────────┬─────────────────────┘
+                           │ (Vector & Text Retrieval)                 │ (On-Device Inference)
+                           ▼                                           ▼
+       ┌───────────────────────────────────────┐      ┌────────────────────────────────────────┐
+       │    SQLite Local Store & FTS5 Index    │      │      Microsoft Foundry Local SDK       │
+       │  - documents (1024-d L2 Vectors)      │      │  - qwen3-embedding-0.6b (1024-d)       │
+       │  - documents_fts (unicode61 BM25)     │      │  - phi-4-mini (3.8B Instruct)          │
+       │  - chat_sessions & chat_messages      │      └────────────────────────────────────────┘
+       └───────────────────────────────────────┘
 ```
 
 ---
