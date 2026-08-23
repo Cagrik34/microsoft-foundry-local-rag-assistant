@@ -17,7 +17,7 @@
 
 **Zenith AI** is an institutional-grade, 100% offline Retrieval-Augmented Generation (RAG) assistant powered by **Microsoft Foundry Local**.
 
-Powered by the **Microsoft Foundry Local SDK**, Zenith AI runs local Large Language Models (**`phi-3.5-mini`** 3.8B Instruct) and Dense Embedding Models (**`qwen3-embedding-0.6b`** 1024-dimensional) on your local CPU. With zero cloud dependency, zero external API costs, and zero network calls, all confidential enterprise documents, embeddings, and chat histories remain strictly inside your device.
+Powered by the **Microsoft Foundry Local SDK**, Zenith AI runs local Large Language Models (**`phi-4-mini`** 3.8B Instruct) and Dense Embedding Models (**`qwen3-embedding-0.6b`** 1024-dimensional) on your local CPU. With zero cloud dependency, zero external API costs, and zero network calls, all confidential enterprise documents, embeddings, and chat histories remain strictly inside your device.
 
 ---
 
