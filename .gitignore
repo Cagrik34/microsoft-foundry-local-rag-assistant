@@ -13,7 +13,8 @@ data/*.db
 *.log
 
 # IDE ve İşletim Sistemi
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 .DS_Store
 Thumbs.db
