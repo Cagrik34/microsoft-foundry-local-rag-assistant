@@ -38,32 +38,32 @@ DIM = "\033[2m"
 RESET = "\033[0m"
 
 MODE_BANNER = f"""
-{CYAN}╭─────────────────────────────────────────────────────────────╮
-│  {MAGENTA}⚡ ZENITH AI{CYAN} — Yerel RAG Akıllı Asistanı                   │
-│  {DIM}🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI{RESET}{CYAN}           │
-├─────────────────────────────────────────────────────────────┤
-│  {BOLD}🚀 Çalıştırma Modunu Seçin:{RESET}{CYAN}                                │
-│                                                             │
-│   {GREEN}[1]{RESET} {BOLD}💻 Terminal (CLI) Modu{RESET}{CYAN}                                │
-│   {GREEN}[2]{RESET} {BOLD}🌐 Web Arayüzü{RESET} {DIM}(Streamlit — Tarayıcıda Açılır){RESET}{CYAN}        │
-╰─────────────────────────────────────────────────────────────╯{RESET}
+{CYAN}=============================================================
+  {MAGENTA}⚡ ZENITH AI{CYAN} — Yerel RAG Akıllı Asistanı
+  {DIM}🔒 Tamamen Çevrimdışı • Gizli • Güvenli Yerel AI{RESET}
+{CYAN}-------------------------------------------------------------
+  {BOLD}🚀 Çalıştırma Modunu Seçin:{RESET}
+
+   {GREEN}[1]{RESET} {BOLD}💻 Terminal (CLI) Modu{RESET}
+   {GREEN}[2]{RESET} {BOLD}🌐 Web Arayüzü{RESET} {DIM}(Streamlit — Tarayıcıda Açılır){RESET}
+{CYAN}============================================================={RESET}
 """
 
 BANNER = f"""
-{CYAN}╭─────────────────────────────────────────────────────────────╮
-│  {MAGENTA}⚡ ZENITH AI STUDIO{CYAN} — Terminal Kontrol Paneli             │
-│  {DIM}🔒 Tamamen Çevrimdışı • Yerel RAG Yapay Zeka Motoru{RESET}{CYAN}        │
-├─────────────────────────────────────────────────────────────┤
-│  {BOLD}📌 Kullanılabilir Komutlar:{RESET}{CYAN}                                │
-│    {GREEN}/web{RESET}       — Streamlit Web Arayüzünü Başlat              │
-│    {GREEN}/indeksle{RESET}  — Belgeleri işle ve veritabanına kaydet       │
-│    {GREEN}/durum{RESET}     — Veritabanı durumunu ve istatistikleri göster│
-│    {GREEN}/temizle{RESET}   — Veritabanı indeksini sıfırla                │
-│    {GREEN}/yardim{RESET}    — Kullanım kılavuzunu ve ipuçlarını göster    │
-│    {GREEN}/cikis{RESET}     — Uygulamadan güvenli şekilde çık             │
-│                                                             │
-│  {YELLOW}💬 Soru sormak için doğrudan yazıp Enter'a basın.{RESET}{CYAN}          │
-╰─────────────────────────────────────────────────────────────╯{RESET}
+{CYAN}=============================================================
+  {MAGENTA}⚡ ZENITH AI STUDIO{CYAN} — Terminal Kontrol Paneli
+  {DIM}🔒 Tamamen Çevrimdışı • Yerel RAG Yapay Zeka Motoru{RESET}
+{CYAN}-------------------------------------------------------------
+  {BOLD}📌 Kullanılabilir Komutlar:{RESET}
+    {GREEN}/web{RESET}       — Streamlit Web Arayüzünü Başlat
+    {GREEN}/indeksle{RESET}  — Belgeleri işle ve veritabanına kaydet
+    {GREEN}/durum{RESET}     — Veritabanı durumunu ve istatistikleri göster
+    {GREEN}/temizle{RESET}   — Veritabanı indeksini sıfırla
+    {GREEN}/yardim{RESET}    — Kullanım kılavuzunu ve ipuçlarını göster
+    {GREEN}/cikis{RESET}     — Uygulamadan güvenli şekilde çık
+
+  {YELLOW}💬 Soru sormak için doğrudan yazıp Enter'a basın.{RESET}
+{CYAN}============================================================={RESET}
 """
 
 HELP_TEXT = f"""
