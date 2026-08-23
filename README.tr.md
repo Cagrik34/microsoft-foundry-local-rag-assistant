@@ -118,5 +118,9 @@ python app.py
 
 ---
 
-## 📄 Lisans
-MIT Lisansı. Kurumsal doküman analizi ve açık kaynaklı yerel yapay zeka sistemleri için geliştirilmiştir.
+## 📜 Lisans & Telif Hakkı
+
+**MIT Lisansı** altında dağıtılmaktadır. Detaylar için [`LICENSE`](LICENSE) dosyasını inceleyebilirsiniz.
+
+**Geliştirici:** Çağrı Giray Keşan  
+**Telif Hakkı:** © 2026 Çağrı Giray Keşan. Tüm Hakları Saklıdır.
