@@ -289,6 +289,12 @@ header[data-testid="stHeader"] {
     background: rgba(15, 23, 42, 0.8) !important;
 }
 
+@keyframes loadingBar {
+    0% { transform: translateX(-100%); }
+    50% { transform: translateX(50%); width: 70%; }
+    100% { transform: translateX(200%); }
+}
+
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 </style>
@@ -333,7 +339,7 @@ def handle_exit_flow(engine: RAGEngine) -> None:
     _background_exit(0.3)
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def get_rag_engine() -> RAGEngine:
     """Model yöneticisini ve veritabanını bir kez başlatır (Cache)."""
     model_mgr = ModelManager()
@@ -405,9 +411,35 @@ def main() -> None:
         st.stop()
         return
 
-    # RAG Motorunu yükle
-    with st.spinner("⚡ Yerel yapay zeka modelleri yükleniyor..."):
-        engine = get_rag_engine()
+    # RAG Motorunu yükle (Kurumsal Açılış Ekranı)
+    splash_slot = st.empty()
+    if "models_loaded" not in st.session_state:
+        splash_slot.markdown(
+            f"""
+            <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);
+                        border-radius:16px;padding:32px 36px;text-align:center;max-width:500px;margin:12vh auto 0 auto;
+                        box-shadow:0 25px 50px -12px rgba(0,0,0,0.6);backdrop-filter:blur(16px);">
+                <div style="font-size:2.2rem;margin-bottom:10px;">⚡</div>
+                <div style="font-size:1.25rem;font-weight:700;color:#f8fafc;margin-bottom:6px;letter-spacing:-0.01em;">
+                    Zenith AI Başlatılıyor
+                </div>
+                <div style="font-size:0.84rem;color:#94a3b8;margin-bottom:20px;line-height:1.5;">
+                    Yerel sinir ağı modelleri ({CHAT_MODEL} & {EMBEDDING_MODEL}) hazırlanıyor...
+                </div>
+                <div style="height:4px;width:100%;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-bottom:16px;">
+                    <div style="height:100%;width:50%;background:linear-gradient(90deg,#3b82f6,#8b5cf6);border-radius:4px;animation:loadingBar 1.5s infinite ease-in-out;"></div>
+                </div>
+                <div style="display:inline-flex;align-items:center;gap:6px;font-size:0.75rem;color:#64748b;">
+                    <span>🔒</span> Microsoft Foundry Local SDK • %100 Çevrimdışı Bellek
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    engine = get_rag_engine()
+    st.session_state["models_loaded"] = True
+    splash_slot.empty()
 
     # ── Sidebar: Sistem & Doküman Yönetimi ──
     with st.sidebar:
