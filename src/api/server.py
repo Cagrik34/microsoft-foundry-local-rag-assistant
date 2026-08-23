@@ -33,12 +33,28 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS ayarları
+# ── Güvenlik Middleware (Security Headers) ──
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Her HTTP yanıtına kurumsal güvenlik başlıklarını ekler."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# CORS güvenliği — Yalnızca yerel ve güvenilir portlara izin verilir
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -104,6 +120,8 @@ def ingest_documents():
     return result
 
 
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB sınır (DoS ve bellek tüketim koruması)
+
 @app.post("/api/documents/upload")
 async def upload_documents(files: List[UploadFile] = File(...)):
     """Dosyaları 'documents/' dizinine güvenli şekilde kaydeder ve indeksler."""
@@ -112,14 +130,22 @@ async def upload_documents(files: List[UploadFile] = File(...)):
     skipped_files = []
 
     for file in files:
-        safe_filename = os.path.basename(file.filename or "document.txt")
+        # 1. Dosya adı sanitizasyonu (Path traversal ve tehlikeli karakter koruması)
+        raw_name = os.path.basename(file.filename or "document.txt")
+        safe_filename = re.sub(r'[^a-zA-Z0-9_\-\.ğüşıöçĞÜŞİÖÇ]', '_', raw_name)
+        
         ext = os.path.splitext(safe_filename)[1].lower()
         if ext not in SUPPORTED_EXTENSIONS:
             skipped_files.append(safe_filename)
             continue
 
-        save_path = os.path.join(DOCUMENTS_DIR, safe_filename)
+        # 2. Dosya boyutu kontrolü (DoS koruması)
         content = await file.read()
+        if len(content) > MAX_UPLOAD_BYTES:
+            skipped_files.append(f"{safe_filename} (50MB boyuttan büyük)")
+            continue
+
+        save_path = os.path.join(DOCUMENTS_DIR, safe_filename)
         with open(save_path, "wb") as f:
             f.write(content)
         saved_files.append(safe_filename)
@@ -187,7 +213,18 @@ def delete_session(session_id: str):
 @app.post("/api/chat/stream")
 async def chat_stream(req: ChatRequest):
     """Server-Sent Events (SSE) protokolü ile asenkron, kesintisiz ve canlı yanıt akışı sunar."""
-    question = req.question.strip()
+    # Giriş temizliği: null byte ve aşırı uzun metin sınırlandırması
+    question = req.question.replace("\x00", "").strip()[:4000]
+
+    if not question:
+        async def invalid_gen():
+            payload = json.dumps({
+                "type": "error",
+                "content": "Lütfen geçerli bir soru yazın."
+            }, ensure_ascii=False)
+            yield f"data: {payload}\n\n"
+        return StreamingResponse(invalid_gen(), media_type="text/event-stream")
+
     session_id = req.session_id or db.create_session(question[:35])
 
     if db.get_chunk_count() == 0:
