@@ -12,13 +12,13 @@ _whisper_model = None
 
 
 def get_whisper_model():
-    """Whisper modelini lazy-load olarak belleğe yükler."""
+    """Whisper base modelini lazy-load olarak belleğe yükler."""
     global _whisper_model
     if _whisper_model is None:
         try:
             from faster_whisper import WhisperModel
-            # CPU int8 ile ultra hızlı (~100-200ms) yerel transkripsiyon
-            _whisper_model = WhisperModel("tiny", device="cpu", compute_type="int8")
+            # CPU int8 ile yüksek doğruluklu ve ultra hızlı (~200ms) yerel transkripsiyon
+            _whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
         except Exception as e:
             print(f"⚠️ Whisper modeli yüklenirken hata: {e}")
             return None
@@ -40,9 +40,10 @@ def transcribe_audio_bytes(audio_bytes: bytes, filename: str = "audio.webm") -> 
         segments, info = model.transcribe(
             tmp_path,
             language="tr",
-            beam_size=1,
+            beam_size=3,
+            initial_prompt="Türkçe doküman analizi, mali tablo, bütçe, teknik altyapı, mimari ve kurumsal soru cümleleri.",
             vad_filter=True,
-            vad_parameters=dict(min_silence_duration_ms=500)
+            vad_parameters=dict(min_silence_duration_ms=400)
         )
         text_segments = [s.text.strip() for s in segments if s.text.strip()]
         return " ".join(text_segments)
