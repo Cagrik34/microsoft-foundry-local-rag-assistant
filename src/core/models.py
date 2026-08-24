@@ -5,10 +5,13 @@ Metin öbekleri, arama sonuçları ve Foundry Local SDK model sürücüsü.
 """
 
 import sys
+import logging
 import concurrent.futures
 from dataclasses import dataclass, field
 from typing import List
 from src.config import EMBEDDING_MODEL, CHAT_MODEL, APP_NAME, MAX_TOKENS
+
+logger = logging.getLogger("zenith.models")
 
 
 @dataclass
@@ -97,17 +100,18 @@ class ModelManager:
             if FoundryLocalManager.instance is not None:
                 self._manager = FoundryLocalManager.instance
                 return
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"FoundryLocalManager instance check skipped: {e}")
 
-        print("⚙️  Foundry Local SDK başlatılıyor...")
+        logger.info("Initializing Microsoft Foundry Local SDK...")
         try:
             config = Configuration(app_name=APP_NAME)
             FoundryLocalManager.initialize(config)
             self._manager = FoundryLocalManager.instance
-        except Exception:
+        except Exception as exc:
+            logger.warning(f"FoundryLocalManager initialization warning: {exc}")
             self._manager = FoundryLocalManager.instance
-        print("✅ SDK hazır.\n")
+        logger.info("Foundry Local SDK initialized.")
 
     def load_embedding_model(self) -> None:
         """Embedding modelini indirir ve belleğe yükler."""
@@ -183,7 +187,7 @@ class ModelManager:
             return res.choices[0].message.content
         except Exception as e:
             try:
-                print(f"\n⚠️  Chat tamamlanamadı ({e}), taze istemci ile deneniyor...", file=sys.stderr)
+                logger.warning(f"Chat completion failed ({e}), attempting recovery with fresh client...")
                 fresh_client = self._chat_model.get_chat_client()
                 fresh_client.settings.max_tokens = MAX_TOKENS
                 fresh_client.settings.temperature = 0.3
@@ -192,7 +196,7 @@ class ModelManager:
                 res = fresh_client.complete_chat(messages)
                 return res.choices[0].message.content
             except Exception as e2:
-                print(f"\n⚠️  Chat completion hatası: {e2}", file=sys.stderr)
+                logger.error(f"Chat completion recovery failed: {e2}")
                 return f"Yanıt üretilemedi: {e2}"
 
     def shutdown(self) -> None:
@@ -201,21 +205,21 @@ class ModelManager:
             if self._embedding_model:
                 try:
                     self._embedding_model.unload()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Embedding model unload note: {e}")
                 self._embedding_client = None
             if self._chat_model:
                 try:
                     self._chat_model.unload()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Chat model unload note: {e}")
                 self._chat_client = None
             if self._executor:
                 self._executor.shutdown(wait=False)
                 self._executor = None
-            print("🔌 Modeller bellekten kaldırıldı.")
+            logger.info("Modeller bellekten temizlendi.")
         except Exception as e:
-            print(f"⚠️  Kapatma hatası: {e}", file=sys.stderr)
+            logger.error(f"Model kapatma hatası: {e}")
 
     @property
     def is_embedding_ready(self) -> bool:

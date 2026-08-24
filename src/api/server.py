@@ -10,12 +10,21 @@ import sys
 import time
 import json
 import asyncio
+import logging
+import re
 from typing import List, Optional
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("zenith.api")
 
 # Proje kök dizinini sys.path'e ekle
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -68,11 +77,13 @@ engine = RAGEngine(model_manager, db)
 def startup_event():
     """Sunucu başlarken yerel yapay zeka modellerini hazırlar."""
     try:
+        logger.info("Initializing models on startup...")
         model_manager.initialize()
         model_manager.load_embedding_model()
         model_manager.load_chat_model()
+        logger.info("Startup model initialization complete.")
     except Exception as e:
-        print(f"⚠️ Model hazırlığı uyarısı: {e}")
+        logger.warning(f"Startup model initialization warning: {e}")
 
 
 @app.on_event("shutdown")

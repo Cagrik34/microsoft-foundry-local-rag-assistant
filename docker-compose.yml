@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  zenith-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zenith-local-rag
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./documents:/app/documents
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
