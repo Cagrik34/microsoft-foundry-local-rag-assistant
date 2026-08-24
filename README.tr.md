@@ -67,12 +67,12 @@
 * **Word (`.docx`) & PDF:** Başlık hiyerarşisi (`# Başlık 1`, `## Başlık 2`) ve tablo hücreleri korunur.
 * **Formatlar:** `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.md`, `.txt`.
 
-### 4. 🎙️ Çift Yönlü Sesli Asistan (Web Speech STT/TTS)
-* **Sesli Soru Sorma (STT):** Tarayıcı yerel ses tanıma API'si ile Türkçe canlı konuşma tanıma.
-* **Seslendirme (TTS):** Üretilen yanıtı tek tıkla doğal Türkçe sesle dinleme.
-
-### 5. 📁 Çoklu Sohbet Oturumu ve Kalıcı Hafıza
-* Sol menüden yeni sohbet oturumları açabilme ve geçmiş analizler arasında geçiş yapma.
+### 3. 🎨 Modern React Web Arayüzü & Sesli Etkileşim
+* **Gemini Tarzı Canlı Ses Dalgaları (Audio Waveform):** `Web Audio API` (`AnalyserNode`) ile kullanıcının ses desibellerine ve tonuna saniyede 60 kare tepki veren mor-mavi dinamik ses dalgaları.
+* **%100 Çevrimdışı Yerel Whisper STT:** `faster-whisper` (CTranslate2 INT8) motoru ile hiçbir bulut/Google bağımlılığı olmadan yerel Türkçe ses tanıma.
+* **Sesli Yanıt Okuma (TTS):** Yanıtları tek tıkla seslendirme.
+* **Markdown ve Tablo Desteği:** Zengin tablo, liste ve kod biçimlendirmesi.
+* **İnteraktif Kaynak Rozetleri:** Her cümlenin sonundaki `[1]`, `[2]` etiketlerine tıklayarak orijinal kaynak öbeğini ve alaka yüzdesini modal içinde görüntüleme.
 * SQLite `chat_sessions` ve `chat_messages` tabloları ile kalıcı saklama.
 * Sohbet geçmişini tek tıkla Markdown (`.md`) formatında indirme.
 

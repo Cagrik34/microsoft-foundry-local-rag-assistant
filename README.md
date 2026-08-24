@@ -69,8 +69,9 @@ Powered by the **Microsoft Foundry Local SDK**, Zenith AI runs local Large Langu
 - **Microsoft Word (`.docx`) & PDF:** Section heading hierarchy (`#`, `##`, `###`) and slide markers are preserved per chunk.
 - **Formats Supported:** `.pdf`, `.docx`, `.xlsx`, `.pptx`, `.md`, `.txt`.
 
-### 4. 🎙️ Dual-Way Voice AI (Web Speech STT & TTS)
-- **Speech-to-Text (STT):** Real-time Turkish voice input via browser-native Web Speech Recognition.
+### 4. 🎙️ Dual-Way Voice AI (Offline Whisper STT & TTS)
+- **Gemini-Style Live Audio Waveform:** Real-time 60 FPS frequency visualizer (`Web Audio API` `AnalyserNode`) responding to voice pitch and decibels.
+- **100% Offline Whisper STT:** Native local Turkish transcription powered by `faster-whisper` (CTranslate2 INT8) with zero cloud dependencies.
 - **Text-to-Speech (TTS):** One-click natural voice playback with WCAG 2.1 accessibility compliance.
 
 ### 5. 📁 Multi-Session Chat & Persistent Memory
