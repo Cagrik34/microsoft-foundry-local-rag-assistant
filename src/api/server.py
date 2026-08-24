@@ -165,6 +165,23 @@ def clear_database():
     return {"deleted_chunks": deleted}
 
 
+@app.post("/api/speech/transcribe")
+async def transcribe_speech(audio_file: UploadFile = File(...)):
+    """Mikrofondan kaydedilen sesi yerel Whisper modeli ile %100 çevrimdışı metne dönüştürür."""
+    from src.core.whisper_engine import transcribe_audio_bytes
+    try:
+        content = await audio_file.read()
+        if not content or len(content) < 100:
+            return {"text": ""}
+
+        filename = audio_file.filename or "audio.webm"
+        transcribed_text = await asyncio.to_thread(transcribe_audio_bytes, content, filename)
+        return {"text": transcribed_text}
+    except Exception as e:
+        print(f"⚠️ Transkripsiyon API hatası: {e}")
+        return {"text": "", "error": str(e)}
+
+
 # ── Oturum Yönetimi ──
 
 @app.get("/api/sessions")
